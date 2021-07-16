@@ -384,6 +384,7 @@ define(`dac_override_allowed', `{
   sdcardd
   tee
   ueventd
+  update_engine
   uncrypt
   vendor_init
   vold
@@ -438,6 +439,7 @@ neverallow {
   -init
   -recovery
   -ueventd
+  -update_engine
   -uncrypt
   -tee
   -hal_bootctl_server
