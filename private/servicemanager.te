@@ -28,6 +28,9 @@ allow servicemanager {
   -vndservicemanager
 }:binder transfer;
 
+# allow self to set SCHED_FIFO
+allow servicemanager self:global_capability_class_set sys_nice;
+
 allow servicemanager service_contexts_file:file r_file_perms;
 
 allow servicemanager vendor_service_contexts_file:file r_file_perms;

@@ -12,3 +12,6 @@ use_bootstrap_libs(servicemanager)
 
 # servicemanager is using apex_info via libvintf
 use_apex_info(servicemanager)
+
+# allow self to set SCHED_FIFO
+allow servicemanager self:global_capability_class_set sys_nice;
