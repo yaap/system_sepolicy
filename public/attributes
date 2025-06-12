@@ -253,6 +253,16 @@ expandattribute coredomain_socket false;
 attribute socket_between_core_and_vendor_violators;
 expandattribute socket_between_core_and_vendor_violators false;
 
+starting_at_board_api(202504, `
+# All vsock communication is required to go through AVF so that we can
+# have a consistent permission model for which is allowed to talk to
+# which. This breaks Treble as well as updatability of VMs and
+# other components.
+# TODO(b/347661724): Remove this once there are no violations.
+attribute unconstrained_vsock_violators;
+expandattribute unconstrained_vsock_violators false;
+')
+
 # All vendor domains which violate the requirement of not executing
 # system processes
 # TODO(b/36463595)
@@ -359,6 +369,9 @@ hal_attribute(graphics_allocator);
 hal_attribute(graphics_composer);
 hal_attribute(health);
 hal_attribute(health_storage);
+starting_at_board_api(202504, `
+    hal_attribute(hwcrypto);
+')
 hal_attribute(identity);
 hal_attribute(input_classifier);
 hal_attribute(input_processor);
@@ -459,4 +472,9 @@ attribute dalvik_config_prop_type;
 # All tee services that can be accessed by VMs
 starting_at_board_api(202504, `
     attribute tee_service_type;
+')
+
+# HAL service used for custom smc filtering project
+starting_at_board_api(202504, `
+    hal_attribute(vm_capabilities);
 ')
