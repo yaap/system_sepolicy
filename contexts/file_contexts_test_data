@@ -320,7 +320,6 @@
 /system/bin/fsck.exfat                                            fsck_exec
 /system/bin/fsck.f2fs                                             fsck_exec
 /system/bin/init                                                  init_exec
-/system/bin/mini-keyctl                                           toolbox_exec
 /system/bin/sload_f2fs                                            e2fs_exec
 /system/bin/make_f2fs                                             e2fs_exec
 /system/bin/fsck_msdos                                            fsck_exec
@@ -810,6 +809,8 @@
 
 /system_ext/bin/hw/android.hardware.drm-service.widevine.system          hal_widevine_system_exec
 /system/system_ext/bin/hw/android.hardware.drm-service.widevine.system   hal_widevine_system_exec
+/system_ext/bin/userdata_alias_remove                             userdata_alias_remove_exec
+/system/system_ext/bin/userdata_alias_remove                      userdata_alias_remove_exec
 
 /vendor_dlkm                                                      vendor_file
 /vendor_dlkm/does_not_exist                                       vendor_file
@@ -945,6 +946,7 @@
 /data/user_de                                                     system_userdir_file
 /data/storage_area                                                system_userdir_file
 /data/misc_ce/0/storage_area_keys                                 storage_area_key_file
+/data/userdata_exp.test                                           exp_partition_data_file
 
 /data/misc/adb                                                    adb_keys_file
 /data/misc/adb/test                                               adb_keys_file
@@ -1130,6 +1132,7 @@
 /data/misc_ce/0/checkin                                           checkin_data_file
 /data/misc_ce/99/checkin/test                                     checkin_data_file
 
+/data/vendor/gatekeeper/test                                      gatekeeper_vendor_data_file
 /data/system/users/0/fpdata                                       fingerprintd_data_file
 /data/system/users/99/fpdata/test                                 fingerprintd_data_file
 /data/vendor_de/0/fpdata                                          fingerprint_vendor_data_file
@@ -1223,6 +1226,8 @@
 
 /data/system_ce/0/shortcut_service/bitmaps                        shortcut_manager_icons
 /data/system_ce/9/shortcut_service/bitmaps/test                   shortcut_manager_icons
+
+/data/system_ce/0/appsearch/appsearch_storage                     appsearch_data_file
 
 /data/system/users/10/photo.png                                   icon_file
 

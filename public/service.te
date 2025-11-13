@@ -18,9 +18,7 @@ type dumpstate_service,         service_manager_type;
 type evsmanagerd_service,       service_manager_type;
 type fingerprintd_service,      service_manager_type;
 type fwk_automotive_display_service, service_manager_type;
-starting_at_board_api(202504, `
-    type fwk_vold_service,      service_manager_type;
-')
+type fwk_vold_service,      service_manager_type;
 type gatekeeper_service,        app_api_service, service_manager_type;
 type gpu_service,               app_api_service, ephemeral_app_api_service, service_manager_type;
 type idmap_service,             service_manager_type;
@@ -71,9 +69,7 @@ type adb_service, system_api_service, system_server_service, service_manager_typ
 type adservices_manager_service, system_api_service, system_server_service, service_manager_type;
 type alarm_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type app_binding_service, system_server_service, service_manager_type;
-starting_at_board_api(202504, `
-    type app_function_service, app_api_service, system_server_service, service_manager_type;
-')
+type app_function_service, app_api_service, system_server_service, service_manager_type;
 type app_hibernation_service, app_api_service, system_api_service, system_server_service, service_manager_type;
 type app_integrity_service, system_api_service, system_server_service, service_manager_type;
 type app_prediction_service, app_api_service, system_server_service, service_manager_type;
@@ -162,9 +158,7 @@ type imms_service, app_api_service, ephemeral_app_api_service, system_server_ser
 type incremental_service, system_server_service, service_manager_type;
 type input_method_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type input_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
-starting_at_board_api(202504, `
-    type intrusion_detection_service, app_api_service, system_api_service, system_server_service, service_manager_type;
-')
+type intrusion_detection_service, app_api_service, system_api_service, system_server_service, service_manager_type;
 type ipsec_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type iris_service, app_api_service, system_server_service, service_manager_type;
 type jobscheduler_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
@@ -179,9 +173,7 @@ type looper_stats_service, system_server_service, service_manager_type;
 type media_communication_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type media_metrics_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type media_projection_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
-starting_at_board_api(202504, `
-    type media_quality_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
-')
+type media_quality_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type media_router_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type media_session_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type meminfo_service, system_api_service, system_server_service, service_manager_type;
@@ -289,9 +281,7 @@ type wifiscanner_service, app_api_service, system_server_service, service_manage
 type wifi_service, app_api_service, system_server_service, service_manager_type;
 type wifinl80211_service, service_manager_type;
 type wifiaware_service, app_api_service, system_server_service, service_manager_type;
-starting_at_board_api(202504, `
-   type wifi_usd_service, app_api_service, system_server_service, service_manager_type;
-')
+type wifi_usd_service, app_api_service, system_server_service, service_manager_type;
 type window_service, system_api_service, system_server_service, service_manager_type;
 type inputflinger_service, system_api_service, system_server_service, service_manager_type;
 type tethering_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
@@ -326,9 +316,7 @@ type hal_graphics_composer_service, protected_service, hal_service_type, service
 type hal_graphics_mapper_service, hal_service_type, service_manager_type;
 type hal_health_service, protected_service, hal_service_type, service_manager_type;
 type hal_health_storage_service, protected_service, hal_service_type, service_manager_type;
-starting_at_board_api(202504, `
-    type hal_hwcrypto_service, protected_service, hal_service_type, service_manager_type;
-')
+type hal_hwcrypto_service, protected_service, hal_service_type, service_manager_type;
 type hal_identity_service, protected_service, hal_service_type, service_manager_type;
 type hal_input_processor_service, protected_service, hal_service_type, service_manager_type;
 type hal_ir_service, protected_service, hal_service_type, service_manager_type;
@@ -336,9 +324,7 @@ type hal_ivn_service, protected_service, hal_service_type, service_manager_type;
 type hal_keymint_service, protected_service, hal_service_type, service_manager_type;
 type hal_light_service, protected_service, hal_service_type, service_manager_type;
 type hal_macsec_service, protected_service, hal_service_type, service_manager_type;
-starting_at_board_api(202504, `
-    type hal_mediaquality_service, protected_service, hal_service_type, service_manager_type;
-')
+type hal_mediaquality_service, protected_service, hal_service_type, service_manager_type;
 type hal_memtrack_service, protected_service, hal_service_type, service_manager_type;
 type hal_neuralnetworks_service, hal_service_type, service_manager_type;
 type hal_nfc_service, protected_service, hal_service_type, service_manager_type;
@@ -375,9 +361,7 @@ type hal_wifi_service, protected_service, hal_service_type, service_manager_type
 type hal_wifi_hostapd_service, protected_service, hal_service_type, service_manager_type;
 type hal_wifi_supplicant_service, protected_service, hal_service_type, service_manager_type;
 type hal_gatekeeper_service, protected_service, hal_service_type, service_manager_type;
-starting_at_board_api(202504, `
-    type hal_vm_capabilities_service, protected_service, hal_service_type, service_manager_type;
-')
+type hal_vm_capabilities_service, protected_service, hal_service_type, service_manager_type;
 
 # system/sepolicy/public is for vendor-facing type and attribute definitions.
 # DO NOT ADD allow, neverallow, or dontaudit statements here.

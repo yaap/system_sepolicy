@@ -74,6 +74,9 @@ init.svc.zipfuse            u:object_r:init_service_status_private_prop:s0 exact
 
 init.svc.adbd       u:object_r:init_service_status_prop:s0 exact string
 
+# The property to hold the number of mount namespaces created by init
+ro.init.mnt_ns.count   u:object_r:init_mnt_ns_prop:s0 exact string
+
 ro.boot.adb.enabled                u:object_r:bootloader_prop:s0 exact bool
 ro.boot.avb_version                u:object_r:bootloader_prop:s0 exact string
 ro.boot.boot_devices               u:object_r:bootloader_prop:s0 exact string
@@ -122,8 +125,12 @@ microdroid_manager.export_tombstones.enabled u:object_r:microdroid_config_prop:s
 microdroid_manager.config_done u:object_r:microdroid_lifecycle_prop:s0 exact bool
 microdroid_manager.init_done u:object_r:microdroid_lifecycle_prop:s0 exact bool
 
-# servicemanager property to avoid waiting for servicemanager process
-servicemanager.installed u:object_r:servicemanager_prop:s0 exact bool
+microdroid_manager.encrypted_store.setup u:object_r:microdroid_encrypted_store_setup_prop:s0 exact bool
+microdroid_manager.encrypted_store.status u:object_r:microdroid_encrypted_store_status_prop:s0 exact enum mounted ready
+
+pageout_bomb.go u:object_r:pageout_bomb_prop:s0 exact bool
+
+servicemanager.ready u:object_r:servicemanager_prop:s0 exact bool
 
 init_debug_policy.adbd.enabled u:object_r:init_debug_policy_prop:s0 exact bool
 

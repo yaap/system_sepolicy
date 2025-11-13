@@ -157,6 +157,15 @@ allowxperm apexd staging_data_file:file ioctl {
   F2FS_IOC_RELEASE_COMPRESS_BLOCKS
 };
 
+# Allow apexd to query FIEMAP from a pinned APEX file in /data/apex/images.
+allowxperm apexd apex_data_file:file ioctl FS_IOC_FIEMAP;
+
+# Allow apexd to pin a file on /data (userdata)
+allowxperm apexd userdata_block_device:blk_file ioctl {FS_IOC_FIEMAP BLKGETSIZE64 BLKIOMIN BLKALIGNOFF};
+
+# Allow apexd to create dm-linear devices on top of userdata partition
+allow apexd userdata_block_device:blk_file r_file_perms;
+
 # Allow apexd to read ro.cold_boot_done prop.
 # apexd uses it to decide whether it needs to keep retrying polling for loop device.
 get_prop(apexd, cold_boot_done_prop)
@@ -172,6 +181,9 @@ get_prop(apexd, apexd_select_prop)
 get_prop(apexd, apexd_payload_metadata_prop)
 
 set_prop(apexd, apexd_prop)
+
+# Allow apexd to set "gsid.mapped_image.*" props
+set_prop(apexd, gsid_prop)
 
 # Allow for use in postinstall
 allow apexd otapreopt_chroot:fd use;

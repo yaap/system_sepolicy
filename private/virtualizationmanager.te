@@ -1,8 +1,3 @@
-until_board_api(202504, `
-    type virtualizationmanager, domain, coredomain;
-    type virtualizationmanager_exec, system_file_type, exec_type, file_type;
-')
-
 # Allow virtualizationmanager to communicate use, read and write over the adb connection.
 allow virtualizationmanager adbd:fd use;
 allow virtualizationmanager adbd:unix_stream_socket { getattr read write };
@@ -43,6 +38,10 @@ allow virtualizationmanager {
   apex_virt_data_file
   privapp_data_file
 }:file { getattr read write };
+
+# TODO(b/407079334): standardize
+# allow to read appsearch VM state
+get_prop(virtualizationmanager, appsearch_vm_prop)
 
 # shell_data_file is used for automated tests and manual debugging.
 allow virtualizationmanager shell_data_file:file { getattr read write };
@@ -111,8 +110,10 @@ userdebug_or_eng(`
   allow virtualizationmanager shell_data_file:file open;
 ')
 
-# Allow virtualizationmanager to read microdroid related files in vendor partition
+# Allow virtualizationmanager to read/write microdroid/vm related files in vendor partition
 r_dir_file(virtualizationmanager, vendor_microdroid_file)
+allow virtualizationmanager vendor_vm_file:file { read getattr };
+allow virtualizationmanager vendor_vm_data_file:file { read write getattr };
 
 # Allow virtualizationmanager to read /data/nativetest for VTS
 r_dir_file(virtualizationmanager, nativetest_data_file)
@@ -157,3 +158,6 @@ selinux_check_access(virtualizationmanager)
 # virtualizationmanager needs to talk to IVmCapabilitiesService HAL to allow specific VMs to
 # issue vendor-private smcs.
 hal_client_domain(virtualizationmanager, hal_vm_capabilities);
+
+# don't let virtmgr give root privileges to itself
+neverallow virtualizationmanager self:global_capability_class_set *;

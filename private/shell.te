@@ -147,6 +147,9 @@ allow shell remount_exec:file rx_file_perms;
 # not the whole system.
 allow shell self:perf_event { open read write };
 
+# Allow shell to read ETM perf event type.
+r_dir_file(shell, sysfs_devices_cs_etm)
+
 # Allow shell to read microdroid vendor image
 r_dir_file(shell, vendor_microdroid_file)
 

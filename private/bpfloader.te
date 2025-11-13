@@ -15,6 +15,7 @@ allow { bpffs_type -fs_bpf } fs_bpf:filesystem associate;
 allow bpfloader self:bpf { map_create map_read map_write prog_load prog_run };
 
 allow bpfloader self:capability { chown sys_admin net_admin };
+allow bpfloader self:global_capability2_class_set { bpf perfmon };
 
 allow bpfloader sysfs_fs_fuse_bpf:file r_file_perms;
 

@@ -131,7 +131,7 @@ func (c *cilCompatMap) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	topHalf := expandTopHalf(ctx)
 	if topHalf.Valid() {
 		out := android.PathForModuleGen(ctx, c.Name())
-		ctx.ModuleBuild(pctx, android.ModuleBuildParams{
+		ctx.Build(pctx, android.BuildParams{
 			Rule:   combineMapsRule,
 			Output: out,
 			Implicits: []android.Path{
@@ -152,6 +152,10 @@ func (c *cilCompatMap) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if c.installSource.Valid() {
 		ctx.SetOutputFiles(android.Paths{c.installSource.Path()}, "")
 	}
+
+	moduleInfoJSON := ctx.ModuleInfoJSON()
+	moduleInfoJSON.Class = []string{"ETC"}
+	moduleInfoJSON.SystemSharedLibs = []string{"none"}
 }
 
 func (c *cilCompatMap) DepsMutator(ctx android.BottomUpMutatorContext) {

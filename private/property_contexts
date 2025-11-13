@@ -380,7 +380,6 @@ prefetch_boot.replay u:object_r:prefetch_service_prop:s0 exact bool
 
 # Virtual A/B and snapuserd properties
 ro.virtual_ab.enabled   u:object_r:virtual_ab_prop:s0 exact bool
-ro.virtual_ab.retrofit  u:object_r:virtual_ab_prop:s0 exact bool
 ro.virtual_ab.compression.enabled  u:object_r:virtual_ab_prop:s0 exact bool
 ro.virtual_ab.compression.xor.enabled   u:object_r:virtual_ab_prop:s0 exact bool
 ro.virtual_ab.userspace.snapshots.enabled u:object_r:virtual_ab_prop:s0 exact bool
@@ -400,6 +399,7 @@ ro.virtual_ab.cow_op_merge_size u:object_r:virtual_ab_prop:s0 exact int
 ro.virtual_ab.verify_threshold_size u:object_r:virtual_ab_prop:s0 exact int
 ro.virtual_ab.verify_block_size u:object_r:virtual_ab_prop:s0 exact int
 ro.virtual_ab.skip_verification u:object_r:virtual_ab_prop:s0 exact bool
+ro.virtual_ab.set_task_profiles u:object_r:virtual_ab_prop:s0 exact bool
 
 # OEMs can set this prop at build time to configure how many seconds to delay
 # merge after installing a Virtual AB OTA. The default behavior is to start
@@ -643,8 +643,8 @@ persist.bluetooth.snooplogfilter.profiles.map               u:object_r:bluetooth
 persist.bluetooth.snooplogfilter.profiles.pbap              u:object_r:bluetooth_prop:s0 exact enum empty disabled fullfilter header magic
 persist.bluetooth.snooplogfilter.profiles.rfcomm.enabled    u:object_r:bluetooth_prop:s0 exact bool
 persist.bluetooth.factoryreset                              u:object_r:bluetooth_prop:s0 exact bool
-persist.bluetooth.leaudio.allow_list                        u:object_r:bluetooth_prop:s0 exact string
-persist.bluetooth.leaudio_dynamic_switcher.mode             u:object_r:bluetooth_lea_mode_prop:s0 exact string
+persist.bluetooth.leaudio.allow_list                        u:object_r:bluetooth_lea_prop:s0 exact string
+persist.bluetooth.leaudio_dynamic_switcher.mode             u:object_r:bluetooth_lea_prop:s0 exact string
 
 bluetooth.a2dp.source.sbc_priority.config            u:object_r:bluetooth_config_prop:s0 exact int
 bluetooth.a2dp.source.aac_priority.config            u:object_r:bluetooth_config_prop:s0 exact int
@@ -1142,6 +1142,7 @@ ro.system.build.version.release             u:object_r:build_prop:s0 exact strin
 ro.system.build.version.release_or_codename u:object_r:build_prop:s0 exact string
 ro.system.build.version.sdk                 u:object_r:build_prop:s0 exact int
 
+ro.adb.has_usb u:object_r:system_adbd_prop:s0 exact bool
 ro.adb.secure u:object_r:build_prop:s0 exact bool
 ro.secure     u:object_r:userdebug_or_eng_prop:s0 exact int
 
@@ -1377,6 +1378,7 @@ ro.build.expect.bootloader u:object_r:exported_default_prop:s0 exact string
 ro.carrier u:object_r:exported_default_prop:s0 exact string
 
 ro.config.low_ram           u:object_r:exported_config_prop:s0 exact bool
+ro.config.batteryless       u:object_r:exported_config_prop:s0 exact bool
 ro.config.vc_call_vol_steps u:object_r:exported_config_prop:s0 exact int
 
 ro.frp.pst u:object_r:exported_default_prop:s0 exact string
@@ -1460,6 +1462,9 @@ ro.apex.updatable u:object_r:exported_default_prop:s0 exact bool
 
 # Property to enable incremental feature
 ro.incremental.enable      u:object_r:incremental_prop:s0
+
+# The property to hold the number of mount namespaces created by init
+ro.init.mnt_ns.count       u:object_r:init_mnt_ns_prop:s0 exact int
 
 # Properties to configure userspace reboot.
 init.userspace_reboot.is_supported u:object_r:userspace_reboot_config_prop:s0 exact bool
@@ -1616,6 +1621,9 @@ remote_provisioning.tee.rkp_only u:object_r:remote_prov_prop:s0 exact bool
 
 # Hostname for the remote provisioning server a device should communicate with
 remote_provisioning.hostname u:object_r:remote_prov_prop:s0 exact string
+
+# Allows a device to skip consent check for connecting to network
+remote_provisioning.skip_network_consent_check u:object_r:remote_prov_prop:s0 exact bool
 
 # Support for post-processing RKP certificates
 remote_provisioning.use_cert_processor u:object_r:remote_prov_cert_prop:s0 exact bool
@@ -1782,6 +1790,9 @@ ro.quick_start.device_id u:object_r:quick_start_prop:s0 exact string
 # Properties for sensor service
 sensors.aosp_low_power_sensor_fusion.maximum_rate u:object_r:sensors_config_prop:s0 exact uint
 
+# Properties for sensor hal
+sensors_hal.dynamic_sensor_hal.op_timeout_ms u:object_r:sensors_hal_prop:s0 exact uint
+
 # Whether the device has a high quality barometer as defined on the CDD.
 # Set by OEMs, read for xTS verifier tests
 sensor.barometer.high_quality.implemented  u:object_r:high_barometer_quality_prop:s0 exact bool
@@ -1817,6 +1828,10 @@ sys.snapshotctl.unmap u:object_r:snapshotctl_prop:s0 exact string
 # Properties for enabling/disabling system services
 ro.system_settings.service.odp_enabled   u:object_r:system_service_enable_prop:s0 exact bool
 ro.system_settings.service.backgound_install_control_enabled   u:object_r:system_service_enable_prop:s0 exact bool
+ro.system_settings.service.adservices_enabled   u:object_r:system_service_enable_prop:s0 exact bool
+
+# Properties for AppSearch VM
+appsearch_vm.idle                u:object_r:appsearch_vm_prop:s0 exact bool
 
 # Properties related to Trusty VMs
 trusty.security_vm.nonsecure_vm_ready u:object_r:trusty_security_vm_sys_prop:s0 exact bool
@@ -1841,3 +1856,12 @@ mmd. u:object_r:mmd_prop:s0
 mmd.zram.enabled u:object_r:mmd_shared_prop:s0 exact bool
 mmd.enabled_aconfig u:object_r:mmd_shared_status_prop:s0 exact bool
 mmd.status. u:object_r:mmd_status_prop:s0
+
+# Properties for USB data protection features
+ro.usb.data_protection.disable_when_locked.supported u:object_r:usb_disable_when_locked_prop:s0 exact bool
+ro.usb.data_protection.disable_when_locked.replug_required_upon_enable u:object_r:usb_disable_when_locked_prop:s0 exact bool
+ro.usb.data_protection.disable_when_locked.data_required_for_high_power_charge u:object_r:usb_disable_when_locked_prop:s0 exact bool
+ro.usb.data_protection.disable_when_locked.no_usb_event_notification u:object_r:usb_disable_when_locked_prop:s0 exact bool
+
+# Properties for userdata device aliasing file control
+userdata.alias.remove u:object_r:userdata_alias_remove_prop:s0 exact string

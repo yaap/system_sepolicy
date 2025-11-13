@@ -2,7 +2,8 @@
 system_internal_prop(adbd_prop)
 system_internal_prop(adbd_tradeinmode_prop)
 system_internal_prop(apexd_payload_metadata_prop)
-system_internal_prop(bluetooth_lea_mode_prop)
+system_internal_prop(appsearch_vm_prop)
+system_internal_prop(bluetooth_lea_prop)
 system_internal_prop(ctl_snapuserd_prop)
 system_internal_prop(ctl_prefetch_prop)
 system_internal_prop(ctl_uprobestats_prop)
@@ -26,6 +27,7 @@ system_internal_prop(device_config_tethering_u_or_later_native_prop)
 system_internal_prop(dmesgd_start_prop)
 system_internal_prop(fastbootd_protocol_prop)
 system_internal_prop(gsid_prop)
+system_internal_prop(init_mnt_ns_prop)
 system_internal_prop(init_perf_lsm_hooks_prop)
 system_internal_prop(init_service_status_private_prop)
 system_internal_prop(init_storage_prop)
@@ -94,34 +96,15 @@ system_restricted_prop(persist_sysui_ranking_update_prop)
 system_restricted_prop(page_size_prop)
 system_restricted_prop(pm_16kb_app_compat_prop)
 
-
-# Properties with no restrictions
-until_board_api(202504, `
-    system_public_prop(bluetooth_finder_prop)
-    system_public_prop(virtual_fingerprint_prop)
-    system_public_prop(virtual_face_prop)
-')
-
-# These types will be public starting at board api 202504
-until_board_api(202504, `
-    system_restricted_prop(enable_16k_pages_prop)
-    system_restricted_prop(profcollectd_etr_prop)
-')
-
-# These types will be public starting at board api 202504
-until_board_api(202504, `
-    system_vendor_config_prop(trusty_security_vm_sys_vendor_prop)
-')
-
 # Properties which should only be written by vendor_init
 system_vendor_config_prop(avf_virtualizationservice_prop)
-until_board_api(202504, `
-    system_vendor_config_prop(drm_config_prop)
-')
 system_vendor_config_prop(high_barometer_quality_prop)
 system_vendor_config_prop(mmd_prop)
 system_vendor_config_prop(mmd_shared_prop)
 system_vendor_config_prop(prefetch_boot_prop)
+system_vendor_config_prop(sensors_hal_prop)
+system_vendor_config_prop(usb_disable_when_locked_prop)
+system_vendor_config_prop(userdata_alias_remove_prop)
 
 typeattribute log_prop log_property_type;
 typeattribute log_tag_prop log_property_type;
@@ -665,14 +648,6 @@ neverallow {
   -hal_telephony_server
   not_compatible_property(`-vendor_init')
 } telephony_status_prop:property_service set;
-
-neverallow {
-  domain
-  -init
-  -vendor_init
-} {
-  graphics_config_prop
-}:property_service set;
 
 neverallow {
   domain

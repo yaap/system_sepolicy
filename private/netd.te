@@ -143,7 +143,6 @@ add_hwservice(netd, system_net_netd_hwservice)
 hwbinder_use(netd)
 
 # AIDL hal server
-binder_call(system_net_netd_service, servicemanager)
 add_service(netd, system_net_netd_service)
 
 ###

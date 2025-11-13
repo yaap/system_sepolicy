@@ -107,9 +107,6 @@ allow dumpstate {
   proc_pid_max
 }:file r_file_perms;
 
-# For comminucating with the system process to do confirmation ui.
-binder_call(dumpstate, incidentcompanion_service)
-
 # Set properties.
 # dumpstate_prop is used to share state with the Shell app.
 set_prop(dumpstate, dumpstate_prop)
@@ -279,6 +276,7 @@ allow dumpstate {
   sysfs_devices_block
   sysfs_dm
   sysfs_loop
+  sysfs_lru_gen_enabled
   sysfs_usb
   sysfs_zram
 }:file r_file_perms;

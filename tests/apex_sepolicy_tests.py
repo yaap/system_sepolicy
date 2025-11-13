@@ -162,7 +162,7 @@ generic_rules = [
     (Is('./etc/permissions/'), AllowRead('dir', {'system_server'})),
     (Glob('./etc/permissions/*.xml'), AllowRead('file', {'system_server'})),
     # init scripts with optional SDK version (e.g. foo.rc, foo.32rc)
-    (Regex('\./etc/.*\.\d*rc'), AllowRead('file', {'init'})),
+    (Regex(r'\./etc/.*\.\d*rc'), AllowRead('file', {'init'})),
     # vintf fragments
     (Is('./etc/vintf/'), AllowRead('dir', {'servicemanager', 'apexd'})),
     (Glob('./etc/vintf/*.xml'), AllowRead('file', {'servicemanager', 'apexd'})),

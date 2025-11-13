@@ -1,3 +1,4 @@
+divert(-1)
 #####################################
 # domain_trans(olddomain, type, newdomain)
 # Allow a transition from olddomain to newdomain
@@ -206,6 +207,10 @@ allow $1 virtualizationservice_data_file:file { getattr read };
 allow virtualizationmanager $1:dir search;
 allow virtualizationmanager $1:file read;
 allow virtualizationmanager $1:lnk_file read;
+
+# Allow owner of a VM to kill the VM forcibly, by sending sigkill to the process group
+# where virtmgr is the leader
+allow $1 crosvm:process sigkill;
 ')
 
 ####################################
@@ -1085,3 +1090,4 @@ neverallow { domain -$1 } $1_iouring:anon_inode *;
 # grant CAP_IPC_LOCK to silence avc denials, which is undesireable.
 dontaudit $1 self:global_capability_class_set ipc_lock;
 ')
+divert(0)

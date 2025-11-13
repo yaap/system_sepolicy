@@ -1,0 +1,5 @@
+
+starting_at_board_api(202604, `
+    init_daemon_domain(init_dev_config)
+    use_bootstrap_libs(init_dev_config)
+')

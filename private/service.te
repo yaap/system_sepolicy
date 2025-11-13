@@ -1,10 +1,6 @@
 type ambient_context_service,        app_api_service, system_server_service, service_manager_type;
-type authentication_policy_service,  system_api_service, system_server_service, service_manager_type;
+type authentication_policy_service,  app_api_service, system_api_service, system_server_service, service_manager_type;
 
-# These types will be public starting at board api 202504
-until_board_api(202504, `
-    type app_function_service, app_api_service, system_server_service, service_manager_type;
-')
 type attention_service,              system_server_service, service_manager_type;
 type bg_install_control_service,     system_api_service, system_server_service, service_manager_type;
 type compos_service,                 service_manager_type;
@@ -30,16 +26,6 @@ type stats_service,                  service_manager_type;
 type statsbootstrap_service,         system_server_service, service_manager_type;
 type statscompanion_service,         system_server_service, service_manager_type;
 type statsmanager_service,           system_api_service, system_server_service, service_manager_type;
-until_board_api(202504, `
-    type media_quality_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
-')
-
-until_board_api(202504, `
-    type hal_mediaquality_service, protected_service, hal_service_type, service_manager_type;
-')
-until_board_api(202504, `
-    type hal_hwcrypto_service, protected_service, hal_service_type, service_manager_type;
-')
 is_flag_enabled(RELEASE_SUPERVISION_SERVICE, `
     type supervision_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 ')
@@ -62,9 +48,6 @@ is_flag_enabled(RELEASE_AVF_ENABLE_MICROFUCHSIA, `
 ')
 
 type uce_service,                      service_manager_type;
-until_board_api(202504, `
-    type fwk_vold_service,                 service_manager_type;
-')
 type wearable_sensing_service,         app_api_service, system_server_service, service_manager_type;
 type wifi_mainline_supplicant_service, service_manager_type;
 type dynamic_instrumentation_service,  app_api_service, system_server_service, service_manager_type;
@@ -72,10 +55,6 @@ type advanced_protection_service,      app_api_service, system_server_service, s
 
 is_flag_enabled(RELEASE_RANGING_STACK, `
     type ranging_service, app_api_service, system_server_service, service_manager_type;
-')
-
-until_board_api(202504, `
-    type hal_vm_capabilities_service, protected_service, hal_service_type, service_manager_type;
 ')
 
 ###

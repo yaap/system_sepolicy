@@ -33,6 +33,7 @@ var (
 		"shared",
 		"testkey",
 		"bluetooth",
+		"nfc",
 	}
 )
 
@@ -59,15 +60,14 @@ func init() {
 	android.RegisterModuleType("mac_permissions", macPermissionsFactory)
 }
 
-func getAllPlatformKeyPaths(ctx android.ModuleContext) android.Paths {
-	var platformKeys android.Paths
+func getAllKeyPaths(ctx android.ModuleContext, dir android.SourcePath) android.Paths {
+	var keys android.Paths
 
-	defaultCertificateDir := ctx.Config().DefaultAppCertificateDir(ctx)
 	for _, key := range AllPlatformKeys {
-		platformKeys = append(platformKeys, defaultCertificateDir.Join(ctx, key+".x509.pem"))
+		keys = append(keys, dir.Join(ctx, key+".x509.pem"))
 	}
 
-	return platformKeys
+	return keys
 }
 
 func (m *macPermissionsModule) DepsMutator(ctx android.BottomUpMutatorContext) {
@@ -89,7 +89,8 @@ func buildVariant(ctx android.ModuleContext) string {
 }
 
 func (m *macPermissionsModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	platformKeys := getAllPlatformKeyPaths(ctx)
+	platformKeys := getAllKeyPaths(ctx, ctx.Config().DefaultAppCertificateDir(ctx))
+	mainlineKeys := getAllKeyPaths(ctx, ctx.Config().MainlineSepolicyDevCertificatesDir(ctx))
 	keys := android.PathsForModuleSrc(ctx, m.properties.Keys)
 	srcs := android.PathsForModuleSrc(ctx, m.properties.Srcs)
 
@@ -101,7 +102,8 @@ func (m *macPermissionsModule) GenerateAndroidBuildActions(ctx android.ModuleCon
 		FlagForEachArg("-D", ctx.DeviceConfig().SepolicyM4Defs()).
 		Inputs(keys).
 		FlagWithOutput("> ", m4Keys).
-		Implicits(platformKeys)
+		Implicits(platformKeys).
+		Implicits(mainlineKeys)
 
 	m.outputPath = android.PathForModuleOut(ctx, m.stem())
 	rule.Command().Text("DEFAULT_SYSTEM_DEV_CERTIFICATE="+ctx.Config().DefaultAppCertificateDir(ctx).String()).

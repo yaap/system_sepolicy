@@ -96,6 +96,9 @@ func (c *compatCil) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if c.installSource.Valid() {
 		ctx.SetOutputFiles(android.Paths{c.installSource.Path()}, "")
 	}
+	moduleInfoJSON := ctx.ModuleInfoJSON()
+	moduleInfoJSON.Class = []string{"ETC"}
+	moduleInfoJSON.SystemSharedLibs = []string{"none"}
 }
 
 func (c *compatCil) AndroidMkEntries() []android.AndroidMkEntries {
@@ -199,6 +202,12 @@ func (f *compatTestModule) GenerateAndroidBuildActions(ctx android.ModuleContext
 	rule := android.NewRuleBuilder(pctx, ctx)
 	rule.Command().Text("touch").Output(f.compatTestTimestamp).Implicits(inputs)
 	rule.Build("compat", "compat test timestamp for: "+f.Name())
+
+	ctx.CheckbuildFile(f.compatTestTimestamp)
+
+	moduleInfoJSON := ctx.ModuleInfoJSON()
+	moduleInfoJSON.Class = []string{"FAKE"}
+	moduleInfoJSON.SystemSharedLibs = []string{"none"}
 }
 
 func (f *compatTestModule) AndroidMkEntries() []android.AndroidMkEntries {

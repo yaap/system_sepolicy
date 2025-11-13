@@ -51,6 +51,7 @@ genfscon proc /sys/kernel/core_pattern u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/core_pipe_limit u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/domainname u:object_r:proc_hostname:s0
 genfscon proc /sys/kernel/dmesg_restrict u:object_r:proc_security:s0
+genfscon proc /sys/kernel/firmware_config u:object_r:proc_firmware_config:s0
 genfscon proc /sys/kernel/hostname u:object_r:proc_hostname:s0
 genfscon proc /sys/kernel/hotplug u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/hung_task_ u:object_r:proc_hung_task:s0
@@ -169,9 +170,7 @@ genfscon sysfs /kernel/memory_state_time u:object_r:sysfs_power:s0
 genfscon sysfs /kernel/dma_heap u:object_r:sysfs_dma_heap:s0
 genfscon sysfs /kernel/ion u:object_r:sysfs_ion:s0
 genfscon sysfs /kernel/ipv4 u:object_r:sysfs_ipv4:s0
-starting_at_board_api(202504, `
 genfscon sysfs /kernel/mm/cma u:object_r:sysfs_cma:s0
-')
 genfscon sysfs /kernel/mm/transparent_hugepage u:object_r:sysfs_transparent_hugepage:s0
 genfscon sysfs /kernel/mm/lru_gen/enabled u:object_r:sysfs_lru_gen_enabled:s0
 genfscon sysfs /kernel/mm/pgsize_migration/enabled u:object_r:sysfs_pgsize_migration:s0

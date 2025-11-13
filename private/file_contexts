@@ -254,8 +254,6 @@
 /system/bin/fsck\.exfat	--	u:object_r:fsck_exec:s0
 /system/bin/fsck\.f2fs	--	u:object_r:fsck_exec:s0
 /system/bin/init		u:object_r:init_exec:s0
-# TODO(/123600489): merge mini-keyctl into toybox
-/system/bin/mini-keyctl	--	u:object_r:toolbox_exec:s0
 /system/bin/sload_f2fs	--	u:object_r:e2fs_exec:s0
 /system/bin/make_f2fs	--	u:object_r:e2fs_exec:s0
 /system/bin/fsck_msdos	--	u:object_r:fsck_exec:s0
@@ -556,6 +554,7 @@
 /(system_ext|system/system_ext)/etc/aconfig(/.*)?                u:object_r:system_aconfig_storage_file:s0
 /(system_ext|system/system_ext)/etc/selinux/system_ext_tee_service_contexts  u:object_r:tee_service_contexts_file:s0
 /(system_ext|system/system_ext)/bin/hw/android\.hardware\.drm-service\.widevine\.system   u:object_r:hal_widevine_system_exec:s0
+/(system_ext|system/system_ext)/bin/userdata_alias_remove u:object_r:userdata_alias_remove_exec:s0
 
 #############################
 # VendorDlkm files
@@ -587,6 +586,7 @@
 #
 /data		u:object_r:system_data_root_file:s0
 /data/(.*)?		u:object_r:system_data_file:s0
+/data/userdata_exp\.[^/]+ u:object_r:exp_partition_data_file:s0
 /data/system/environ(/.*)? u:object_r:environ_system_data_file:s0
 /data/system/packages\.list u:object_r:packages_list_file:s0
 /data/system/game_mode_intervention\.list u:object_r:game_mode_intervention_list_file:s0
@@ -754,6 +754,9 @@
 # checkin data files
 /data/misc_ce/[0-9]+/checkin(/.*)? u:object_r:checkin_data_file:s0
 
+# Gatekeeper data
+/data/vendor/gatekeeper(/.*)? u:object_r:gatekeeper_vendor_data_file:s0
+
 # Fingerprint data
 /data/system/users/[0-9]+/fpdata(/.*)? u:object_r:fingerprintd_data_file:s0
 
@@ -854,6 +857,9 @@
 /data/system_ce/[0-9]+/backup(/.*)?		u:object_r:backup_data_file:s0
 # Backup service temporary per-user data for inter-change with apps
 /data/system_ce/[0-9]+/backup_stage(/.*)?	u:object_r:backup_data_file:s0
+
+# AppSearch files (https://developer.android.com/develop/ui/views/search/appsearch)
+/data/system_ce/[0-9]+/appsearch(/.*)?          u:object_r:appsearch_data_file:s0
 
 #############################
 # efs files

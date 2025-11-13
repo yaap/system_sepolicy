@@ -41,14 +41,18 @@ allow encryptedstore tmpfs:dir  { add_name create mounton write };
 allow encryptedstore labeledfs:filesystem { relabelfrom };
 allow encryptedstore encryptedstore_fs:filesystem { mount unmount relabelto relabelfrom };
 
-# chmod the root directory
-allow encryptedstore encryptedstore_file:dir setattr;
+# chmod the root directory (and check it)
+allow encryptedstore encryptedstore_file:dir { getattr setattr };
 
 # allow encryptedstore to log to the kernel
 allow encryptedstore kmsg_device:chr_file w_file_perms;
 
 # Allow encryptedstore to write kmsg_debug (stdio_to_kmsg).
 allow encryptedstore kmsg_debug_device:chr_file w_file_perms;
+
+# Allow encryptedstore to set microdroid_manager.encrypted_store.status sysprop so that init can
+# perform restorecon on /mnt/encryptedstore.
+set_prop(encryptedstore, microdroid_encrypted_store_status_prop);
 
 # Only microdroid_manager can run encryptedstore
 neverallow { domain -microdroid_manager } encryptedstore:process { transition dyntransition };

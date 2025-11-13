@@ -90,6 +90,9 @@ dontaudit domain runtime_event_log_tags_file:file { map open read };
 # Logd sets defaults if certain properties are empty.
 set_prop(logd, logd_prop)
 
+# Allow logd to use io_uring
+io_uring_use(logd)
+
 ###
 ### Neverallow rules
 ###

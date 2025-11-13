@@ -333,6 +333,26 @@ allow { domain -domain } hwservice_manager_type:hwservice_manager { add find };
 # when it's not explicitly used in allow rules
 allow { domain -domain } vndservice_manager_type:service_manager { add find };
 
+# Allow processes to find statsbootstrap service via service_manager
+allow {
+  domain
+  -init
+  -webview_zygote
+  -vendor_init
+  -app_zygote
+  -isolated_app_all
+  -hal_configstore_server
+} statsbootstrap_service:service_manager find;
+allow {
+  domain
+  -init
+  -webview_zygote
+  -vendor_init
+  -app_zygote
+  -isolated_app_all
+  -hal_configstore_server
+} system_server:binder call;
+
 # Under ASAN, processes will try to read /data, as the sanitized libraries are there.
 with_asan(`allow domain system_data_file:dir getattr;')
 # Under ASAN, /system/asan.options needs to be globally accessible.
@@ -917,6 +937,7 @@ full_treble_only(`
     -mediaserver_service
     -nfc_service
     -radio_service
+    -statsbootstrap_service
     -virtual_touchpad_service
     -vr_manager_service
     userdebug_or_eng(`-hal_face_service')
@@ -1035,10 +1056,17 @@ full_treble_only(`
     -data_between_core_and_vendor_violators
     -init
     -vold_prepare_subdirs
+    -crosvm
   } {
     data_file_type
     -core_data_file_type
     -app_data_file_type
+  }:file_class_set ~{ append getattr ioctl read write map };
+  neverallow crosvm {
+    data_file_type
+    -core_data_file_type
+    -app_data_file_type
+    -vendor_vm_data_file
   }:file_class_set ~{ append getattr ioctl read write map };
 ')
 full_treble_only(`
@@ -2103,6 +2131,8 @@ full_treble_only(`
     # TODO(b/37168747): clean up fwk access to /vendor
     -crash_dump
     -crosvm # loads vendor-specific disk images
+    -virtualizationmanager # loads vendor-specific disk images
+    -early_virtmgr # loads vendor-specific disk images
     -init # starts vendor executables
     -kernel # loads /vendor/firmware
     -heapprofd
@@ -2144,6 +2174,23 @@ full_treble_only(`
 # (Every domain is allowed self:fork, so this will trigger if the
 # intsersection of domain & mlsvendorcompat is not empty.)
 neverallow domain mlsvendorcompat:process fork;
+
+# Detect certain nonsensical binder allow rules. Binder communication
+# only occurs between processes, so having binder allow rules
+# associated with non-processes does not make any sense.
+# Examples of rules which do not make sense include:
+#
+#  # files do not host binder services
+#  allow domain file_type:binder call;
+#
+#  # service names are not processes and do not host binder services
+#  allow domain service_manager_type:binder call;
+#
+#  # Files are not processes and cannot initiate binder calls
+#  allow file_type dumpstate:binder call;
+#
+neverallow { -domain } *:binder *;
+neverallow * { -domain }:binder *;
 
 # Only init and otapreopt_chroot should be mounting filesystems on locations
 # labeled system or vendor (/product and /vendor respectively).
@@ -2216,6 +2263,7 @@ neverallow {
   -vendor_modprobe
   userdebug_or_eng(`-simpleperf_boot')
   -kernel
+  -bpfloader
   -uprobestats
 } self:capability2 perfmon;
 
@@ -2320,7 +2368,6 @@ neverallow { domain -init -vendor_init -ueventd } sysfs_pgsize_migration:file no
 # virtmanager enforces access policy for which components can connect
 # to which VMs. If you have permissions to make direct connections, you
 # can talk to anything.
-starting_at_board_api(202504, `
 neverallow {
     domain
 
@@ -2340,4 +2387,9 @@ neverallow {
     -hal_widevine_system # TODO: get connections from virtmanager
     -vmlauncher_app     # TODO: get connections from virtmanager
 } *:vsock_socket { connect create accept bind };
-')
+
+# kexec is not available on Android.
+neverallow domain *:system { kexec_image_load kexec_initramfs_load };
+
+# READING_X509_CERTIFICATE is not used.
+neverallow domain *:system x509_certificate_load;

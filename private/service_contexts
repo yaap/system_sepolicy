@@ -301,9 +301,7 @@ inputflinger                              u:object_r:inputflinger_service:s0
 input_method                              u:object_r:input_method_service:s0
 input                                     u:object_r:input_service:s0
 installd                                  u:object_r:installd_service:s0
-starting_at_board_api(202504, `
-    intrusion_detection                   u:object_r:intrusion_detection_service:s0
-')
+intrusion_detection                   u:object_r:intrusion_detection_service:s0
 iphonesubinfo_msim                        u:object_r:radio_service:s0
 iphonesubinfo2                            u:object_r:radio_service:s0
 iphonesubinfo                             u:object_r:radio_service:s0
@@ -516,9 +514,7 @@ wifi                                      u:object_r:wifi_service:s0
 wifinl80211                               u:object_r:wifinl80211_service:s0
 wifiaware                                 u:object_r:wifiaware_service:s0
 wifirtt                                   u:object_r:rttmanager_service:s0
-starting_at_board_api(202504, `
-   wifi_usd                                  u:object_r:wifi_usd_service:s0
-')
+wifi_usd                                  u:object_r:wifi_usd_service:s0
 wifi_mainline_supplicant                  u:object_r:wifi_mainline_supplicant_service:s0
 window                                    u:object_r:window_service:s0
 *                                         u:object_r:default_android_service:s0

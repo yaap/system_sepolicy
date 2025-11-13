@@ -586,7 +586,8 @@ neverallow { appdomain -shell } { domain -appdomain }:file no_rw_file_perms;
 # All others prohibited.
 # -perfetto is to allow shell (which is an appdomain) to kill perfetto
 # (see private/shell.te).
-neverallow appdomain { domain -appdomain -perfetto }:process
+# -crosvm is to allow owner of a VM to kill VM they own.
+neverallow appdomain { domain -appdomain -perfetto -crosvm }:process
     { sigkill sigstop signal };
 
 # Write to rootfs.
@@ -814,3 +815,9 @@ is_flag_enabled(RELEASE_UNLOCKED_STORAGE_API, `
     -sdk_sandbox_all
   } storage_area_dir:{ notdevfile_class_set dir } storage_area_content_file;
 ')
+
+# Apps should not be able to open trace data files, they should depend upon traceur to pass a file descriptor.
+# 'write' is granted to allow apps to write heap dumps.
+allow appdomain trace_data_file:file { read write getattr };
+neverallow { appdomain -traceur_app -platform_app -system_app -shell } trace_data_file:file ~{ read write getattr };
+neverallow { appdomain -traceur_app -platform_app -system_app -shell } trace_data_file:dir *;
