@@ -342,6 +342,9 @@ hal_attribute(audiocontrol);
 hal_attribute(authgraph);
 hal_attribute(authsecret);
 hal_attribute(bluetooth);
+starting_at_board_api(202604, `
+hal_attribute(bluetooth_lpp);
+') # starting_at_board_api(202604)
 hal_attribute(bootctl);
 hal_attribute(broadcastradio);
 hal_attribute(camera);
@@ -466,9 +469,22 @@ attribute tee_service_type;
 # HAL service used for custom smc filtering project
 hal_attribute(vm_capabilities);
 
+starting_at_board_api(202604, `
 # Domains violating Treble Labeling
 # debuggable builds ONLY. NOT ALLOWED on user builds.
-starting_at_board_api(202604, `
 attribute treble_labeling_violators;
 expandattribute treble_labeling_violators false;
-')
+
+# Domains loading mapper SPHAL
+attribute mapper_sphal_domain;
+expandattribute mapper_sphal_domain false;
+
+# Domains loading opengl SPHAL
+attribute opengl_sphal_domain;
+expandattribute opengl_sphal_domain false;
+
+# Domains loading vulkan SPHAL
+attribute vulkan_sphal_domain;
+expandattribute vulkan_sphal_domain false;
+
+') # starting_at_board_api(202604)

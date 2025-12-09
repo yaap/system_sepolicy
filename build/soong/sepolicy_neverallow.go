@@ -119,7 +119,7 @@ func (n *neverallowTestModule) GenerateAndroidBuildActions(ctx android.ModuleCon
 	var checkpolicyConfPaths android.Paths
 	var sepolicyAnalyzeConfPaths android.Paths
 
-	ctx.VisitDirectDeps(func(child android.Module) {
+	ctx.VisitDirectDepsProxy(func(child android.ModuleProxy) {
 		depTag := ctx.OtherModuleDependencyTag(child)
 		if depTag != checkpolicyTag && depTag != sepolicyAnalyzeTag {
 			return

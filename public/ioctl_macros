@@ -54,6 +54,17 @@ define(`unpriv_tty_ioctls', `{
   TIOCSCTTY TCFLSH TIOCSPGRP TIOCGPGRP
 }')
 
+# serial ports ioctls allowed for untrusted app uses
+# allow operations on a variety of serial ports, but still excludes those
+# that require CAP_SYS_ADMIN and those in "Controlling terminal",
+# "Process group and session ID and "Pseudoterminal ioctls" in ioctl_tty(2).
+define(`unpriv_serial_ioctls', `{
+  TCGETS TCSETS TCSETSW TCSETSF TCGETS2 TCSETS2 TCSETSW2 TCSETSF2 TCGETA TCSETA TCSETAW
+  TCSETAF TIOCGLCKTRMIOS TIOCGWINSZ TIOCSWINSZ TCSBRK TCSBRKP TIOCSBRK TIOCCBRK TCXONC
+  FIONREAD TIOCOUTQ TCFLSH TIOCSERGETLSR TIOCEXCL TIOCGEXCL TIOCNXCL TIOCGETD TIOCSETD
+  TIOCMGET TIOCMSET TIOCMBIC TIOCMBIS TIOCMIWAIT TIOCGICOUNT TIOCGSOFTCAR TIOCSSOFTCAR
+}')
+
 # point to point ioctls
 define(`ppp_ioctls', `{
 PPPIOCGL2TPSTATS PPPIOCGCHAN PPPIOCATTCHAN PPPIOCDISCONN

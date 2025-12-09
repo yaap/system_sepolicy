@@ -143,6 +143,9 @@ dontaudit untrusted_app_all {
   proc_zoneinfo
 }:file read;
 
+# Ignore access to userdebug_or_eng_prop
+dontaudit untrusted_app_all userdebug_or_eng_prop:file read;
+
 # Allow the allocation and use of ptys
 # Used by: https://play.google.com/store/apps/details?id=jackpal.androidterm
 create_pty(untrusted_app_all)

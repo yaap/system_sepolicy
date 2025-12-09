@@ -63,7 +63,10 @@ userdebug_or_eng(`
 ')
 
 # Allow crosvm to tune for performance.
-allow crosvm self:global_capability_class_set sys_nice;
+# Allow crosvm to use ipc_owner capability to enable guest-ffa for pVMs.
+# Note: the crosvm itself doesn't have the ipc_owner capability, but will only inherit it iff
+# the "pVM owner" process (the process that is using AVF APIs to start a pVM has the capability.
+allow crosvm self:global_capability_class_set { ipc_owner sys_nice };
 
 # Let crosvm access its control socket as created by VS.
 #   read, write, getattr: listener socket polling
@@ -102,6 +105,7 @@ is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
   allow crosvm device:dir { read open };
   allow crosvm same_process_hal_file:file { read open getattr map execute };
   allow crosvm gpu_device:chr_file { read write open ioctl map open getattr };
+  allow crosvm gpu_device:dir { search };
   allow crosvm hal_graphics_allocator:fd use;
   allow crosvm hal_graphics_allocator_server:binder call;
   allow crosvm surfaceflinger:fd use;
@@ -123,9 +127,17 @@ is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
   allow crosvm fuse:dir create_dir_perms;
   allow crosvm mnt_user_file:dir search;
 
+  allow crosvm hal_graphics_composer:fd use;
   # Allow crosvm to create unix socket for vhost-user-fs
   allow crosvm virtualizationservice_data_file:dir { add_name write remove_name };
   allow crosvm virtualizationservice_data_file:sock_file { create write unlink };
+
+  # for gfxstream with udmabuf
+  allow crosvm udmabuf_device:chr_file { open read write ioctl };
+
+  # ASurfaceTransaction_setBuffer for gfxstream
+  binder_call(crosvm, surfaceflinger)
+  allow crosvm surfaceflinger_service:service_manager find;
 ')
 
 # crosvm tries to use netlink sockets as part its APCI implementation, but we don't need it for AVF (b/228077254)
@@ -195,6 +207,7 @@ full_treble_only(`
   neverallow crosvm {
     vendor_file_type
     -vendor_vm_file
+    -vendor_vm_data_file
     # These types are not required for crosvm, but the access is granted to globally in domain.te
     # thus should be exempted here.
     -vendor_cgroup_desc_file

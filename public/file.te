@@ -38,6 +38,7 @@ type proc_dirty, fs_type, proc_type;
 type proc_diskstats, fs_type, proc_type;
 type proc_extra_free_kbytes, fs_type, proc_type;
 type proc_filesystems, fs_type, proc_type;
+starting_at_board_api(202604, `type proc_firmware_config, fs_type, proc_type;')
 type proc_fs_verity, fs_type, proc_type;
 type proc_hostname, fs_type, proc_type;
 type proc_hung_task, fs_type, proc_type;
@@ -64,7 +65,7 @@ type proc_pid_max, fs_type, proc_type;
 type proc_pipe_conf, fs_type, proc_type;
 type proc_pressure_cpu, fs_type, proc_type;
 type proc_pressure_io, fs_type, proc_type;
-type proc_pressure_mem, fs_type, proc_type;
+type proc_pressure_mem, fs_type, proc_type, mlstrustedobject;
 type proc_random, fs_type, proc_type;
 type proc_sched, fs_type, proc_type;
 type proc_slabinfo, fs_type, proc_type;
@@ -360,7 +361,9 @@ type apk_private_tmp_file, file_type, data_file_type, core_data_file_type, mlstr
 # /data/dalvik-cache
 type dalvikcache_data_file, file_type, data_file_type, core_data_file_type;
 # /data/ota
-type ota_data_file, file_type, data_file_type, core_data_file_type;
+until_board_api(202604, `
+    type ota_data_file, file_type, data_file_type, core_data_file_type;
+');
 # /data/ota_package
 type ota_package_file, file_type, data_file_type, core_data_file_type, mlstrustedobject;
 # /data/misc/profiles
@@ -434,7 +437,9 @@ type postinstall_mnt_dir, file_type;
 # Files inside the /postinstall mountpoint are all labeled as postinstall_file.
 type postinstall_file, file_type;
 # /postinstall/apex: Mount point used for APEX images within /postinstall.
-type postinstall_apex_mnt_dir, file_type;
+until_board_api(202604, `
+    type postinstall_apex_mnt_dir, file_type;
+');
 
 # /data_mirror: Contains mirror directory for storing all apps data.
 type mirror_data_file, file_type, core_data_file_type;
@@ -640,6 +645,13 @@ type tee_service_contexts_file, system_file_type, file_type;
 starting_at_board_api(202604, `
     type virtualizationservice_data_file, file_type, data_file_type, core_data_file_type, mlstrustedobject;
 ')
+
+# /sys/bus/thunderbolt
+starting_at_board_api(202604, `type sysfs_thunderbolt, fs_type, sysfs_type;')
+# /sys/class/typec
+starting_at_board_api(202604, `type sysfs_typec, fs_type, sysfs_type;')
+# /sys/class/usb_power_delivery
+starting_at_board_api(202604, `type sysfs_usb_pd, fs_type, sysfs_type;')
 
 # system/sepolicy/public is for vendor-facing type and attribute definitions.
 # DO NOT ADD allow, neverallow, or dontaudit statements here.

@@ -11,6 +11,18 @@ binder_use(virtualizationmanager)
 # Let virtualizationmanager find and communicate with virtualizationservice.
 allow virtualizationmanager virtualization_service:service_manager find;
 binder_call(virtualizationmanager, virtualizationservice)
+# Let virtualizationmanager find dropbox_service.
+allow virtualizationmanager dropbox_service:service_manager find;
+# Let virtualizationmanager to read /proc/version.
+allow virtualizationmanager proc_version:file r_file_perms;
+
+# Let virtualizationmanager find host services to proxy for payload clients
+# All calls between the host and payload clients are forwarded through
+# virtualizationmanager.
+# If this list becomes too large, we may want to split virtualizationmanager
+# into multiple domains.
+allow virtualizationmanager fwk_stats_service:service_manager find;
+binder_call(virtualizationmanager, stats_service_server);
 
 # Allow calling into the system server to find native services. "permission_service" to check
 # permissions, and "package_native" for staged apex info.
@@ -57,6 +69,9 @@ allow virtualizationmanager derive_classpath_exec:file rx_file_perms;
 allow virtualizationmanager apex_mnt_dir:dir r_dir_perms;
 # Ignore harmless denials on /proc/self/fd
 dontaudit virtualizationmanager self:dir write;
+
+# Let virtualizationmanager access /proc/pressure/memory for PSI monitors
+allow virtualizationmanager proc_pressure_mem:file rw_file_perms;
 
 # Let virtualizationmanager to accept vsock connection from the guest VMs
 allow virtualizationmanager self:vsock_socket { create_socket_perms_no_ioctl listen accept };
@@ -117,6 +132,12 @@ allow virtualizationmanager vendor_vm_data_file:file { read write getattr };
 
 # Allow virtualizationmanager to read /data/nativetest for VTS
 r_dir_file(virtualizationmanager, nativetest_data_file)
+
+# The virtualizationmanager needs to listen to changes to
+# persist.avf_vm.traced_relay.enable.{vm_name} sysprop to start/stop traced_relay service
+# inside the VM. Additionally it needs to set this sysprop when VM is killed to stop the
+# monitoring thread.
+set_prop(virtualizationmanager, avf_vm_traced_relay_enabled_prop)
 
 # Do not allow writing vendor_microdroid_file from any process.
 neverallow {

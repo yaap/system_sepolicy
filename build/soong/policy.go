@@ -46,6 +46,8 @@ var policyConfOrder = []string{
 	"te_macros",
 	"ioctl_defines",
 	"ioctl_macros",
+	"nlmsg_defines",
+	"nlmsg_macros",
 	"attributes|*.te",
 	"roles_decl",
 	"roles",

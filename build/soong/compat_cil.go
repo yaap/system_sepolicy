@@ -189,7 +189,7 @@ func (f *compatTestModule) GenerateAndroidBuildActions(ctx android.ModuleContext
 		ctx.ModuleErrorf("There can only be 1 se_compat_test module named sepolicy_compat_test in system/sepolicy/compat")
 	}
 	var inputs android.Paths
-	ctx.VisitDirectDepsWithTag(compatTestDepTag, func(child android.Module) {
+	ctx.VisitDirectDepsProxyWithTag(compatTestDepTag, func(child android.ModuleProxy) {
 		outputs := android.OutputFilesForModule(ctx, child, "")
 		if len(outputs) != 1 {
 			panic(fmt.Errorf("Module %q should produce exactly one output, but did %q", ctx.OtherModuleName(child), outputs.Strings()))

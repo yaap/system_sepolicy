@@ -22,6 +22,7 @@ Usage:
 
 
 import argparse
+import fileinput
 import os
 import pathlib
 import pkgutil
@@ -255,7 +256,7 @@ def do_main(work_dir):
         rules.append(system_vendor_rule(args.partition))
 
     errors = []
-    with open(args.file_contexts, 'rt', encoding='utf-8') as file_contexts:
+    with fileinput.input(files=(args.file_contexts), mode='r', encoding='utf-8') as file_contexts:
         for line in file_contexts:
             errors.extend(check_line(pol, line, rules, ignore_unknown_context))
     if len(errors) > 0:

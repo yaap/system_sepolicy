@@ -95,9 +95,6 @@ with_asan(`allow system_server dalvikcache_data_file:lnk_file r_file_perms;')
 allow system_server resourcecache_data_file:file r_file_perms;
 allow system_server resourcecache_data_file:dir r_dir_perms;
 
-# ptrace to processes in the same domain for debugging crashes.
-allow system_server self:process ptrace;
-
 # Child of the zygote.
 allow system_server zygote:fd use;
 allow system_server zygote:process sigchld;
@@ -110,7 +107,7 @@ allow system_server {
   virtualizationmanager
   webview_zygote
   zygote
-}:process { getpgid sigkill signull };
+}:process { getpgid sigkill signull setsched };
 
 # Read /system/bin/app_process.
 allow system_server zygote_exec:file r_file_perms;
@@ -154,8 +151,11 @@ allow system_server self:global_capability2_class_set wake_alarm;
 allow system_server self:netlink_netfilter_socket create_socket_perms_no_ioctl;
 
 # Create/use netlink_tcpdiag_socket for looking up connection UIDs for VPN apps.
-allow system_server self:netlink_tcpdiag_socket
-    { create_socket_perms_no_ioctl nlmsg_read nlmsg_write };
+allow system_server self:netlink_tcpdiag_socket create_socket_perms_no_ioctl;
+# For kernel < 6.13
+allow system_server self:netlink_tcpdiag_socket { nlmsg_read nlmsg_write };
+# For kernel >= 6.13
+allow system_server self:netlink_tcpdiag_socket nlmsg;
 
 # Use netlink uevent sockets.
 allow system_server self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
@@ -177,9 +177,14 @@ allow system_server self:socket create_socket_perms_no_ioctl;
 
 # Set and get routes directly via netlink.
 allow system_server self:netlink_route_socket nlmsg_write;
+allowxperm system_server self:netlink_route_socket nlmsg priv_route_socket_nlmsgs;
 
 # Use XFRM (IPsec) netlink sockets
-allow system_server self:netlink_xfrm_socket { create_socket_perms_no_ioctl nlmsg_write nlmsg_read };
+allow system_server self:netlink_xfrm_socket create_socket_perms_no_ioctl;
+# For kernel < 6.13
+allow system_server self:netlink_xfrm_socket { nlmsg_read nlmsg_write };
+# For kernel >= 6.13
+allow system_server self:netlink_xfrm_socket nlmsg;
 
 # Kill apps.
 allow system_server appdomain:process { getpgid sigkill signal };
@@ -269,6 +274,7 @@ allow system_server self:tun_socket create_socket_perms_no_ioctl;
 # Talk to init and various daemons via sockets.
 unix_socket_connect(system_server, lmkd, lmkd)
 unix_socket_connect(system_server, zygote, zygote)
+unix_socket_connect(system_server, zygote_next, zygote_next)
 unix_socket_connect(system_server, uncrypt, uncrypt)
 
 # Allow system_server to write to statsd.
@@ -393,8 +399,10 @@ allow system_server {
   artd
   audioserver
   cameraserver
+  composd
   drmserver
   gpuservice
+  idmap
   inputflinger
   keystore
   mediadrmserver
@@ -410,6 +418,7 @@ allow system_server {
   servicemanager
   statsd
   surfaceflinger
+  virtualizationservice
   vold
 
   # This list comes from HAL_INTERFACES_OF_INTEREST in
@@ -465,6 +474,22 @@ allow system_server sysfs_type:dir r_dir_perms;
 
 r_dir_file(system_server, sysfs_android_usb)
 allow system_server sysfs_android_usb:file w_file_perms;
+
+# Read/write to thunderbolt devices for authorization
+r_dir_file(system_server, sysfs_thunderbolt)
+allow system_server sysfs_thunderbolt:file rw_file_perms;
+
+# Read/write to typec for usb4 mode policies
+r_dir_file(system_server, sysfs_typec)
+allow system_server sysfs_typec:file rw_file_perms;
+
+# Read from usb_pd for typec PD information
+r_dir_file(system_server, sysfs_usb_pd)
+allow system_server sysfs_usb_pd:file r_file_perms;
+
+# Read/write to usb for port mapping and authorization
+r_dir_file(system_server, sysfs_usb)
+allow system_server sysfs_usb:file rw_file_perms;
 
 r_dir_file(system_server, sysfs_extcon)
 
@@ -839,6 +864,7 @@ set_prop(system_server, device_config_tethering_u_or_later_native_prop)
 set_prop(system_server, device_config_mmd_native_prop)
 set_prop(system_server, smart_idle_maint_enabled_prop)
 set_prop(system_server, arm64_memtag_prop)
+set_prop(system_server, native_binder_stats_prop)
 
 # staged flag properties
 set_prop(system_server, next_boot_prop)
@@ -943,6 +969,8 @@ get_prop(system_server, usb_disable_when_locked_prop)
 
 # Allow system server to read build properties for bootimage partition.
 get_prop(system_server, build_bootimage_prop)
+
+get_prop(system_server, hsum_boot_strategy_prop)
 
 # Create a socket for connections from debuggerd.
 allow system_server system_ndebug_socket:sock_file create_file_perms;
@@ -1277,8 +1305,20 @@ with_asan(`
 # allow system_server to read the eBPF maps that stores the traffic stats information and update
 # the map after snapshot is recorded, and to read, update and run the maps and programs used for
 # time in state accounting
-allow system_server { fs_bpf fs_bpf_net_shared fs_bpf_netd_readonly fs_bpf_netd_shared }:dir search;
-allow system_server { fs_bpf fs_bpf_net_shared fs_bpf_netd_readonly fs_bpf_netd_shared }:file { getattr read write };
+allow system_server {
+  fs_bpf
+  fs_bpf_cputimeinstate
+  fs_bpf_net_shared
+  fs_bpf_netd_readonly
+  fs_bpf_netd_shared
+}:dir search;
+allow system_server {
+  fs_bpf
+  fs_bpf_cputimeinstate
+  fs_bpf_net_shared
+  fs_bpf_netd_readonly
+  fs_bpf_netd_shared
+}:file { getattr read write };
 allow system_server bpfloader:bpf prog_run;
 allow system_server self:bpf map_create;
 allow system_server { bpfloader netd network_stack system_server }:bpf { map_read map_write };
@@ -1319,7 +1359,10 @@ get_prop(system_server,system_jvmti_agent_prop)
 
 # UsbDeviceManager uses /dev/usb-ffs
 allow system_server functionfs:dir search;
-allow system_server functionfs:file rw_file_perms;
+# UsbDeviceManager needs relabelfrom to change from functionfs to usbaccessory
+allow system_server functionfs:file { rw_file_perms relabelfrom };
+allow system_server usbaccessory_device:file relabelto;
+allow usbaccessory_device functionfs:filesystem associate;
 # To resolve arbitrary sysfs paths from /sys/class/udc/* symlinks.
 allow system_server sysfs_type:dir search;
 r_dir_file(system_server, sysfs_udc)
@@ -1502,6 +1545,8 @@ allow system_server apex_info_file:file r_file_perms;
 
 # Allow system_server read APEX file mapped as device-mapper device
 allow system_server dm_device:blk_file r_file_perms;
+# and read the device mapper name from sysfs
+allow system_server sysfs_dm:file r_file_perms;
 
 # Allow system_server to communicate with tradeinmode.
 binder_call(system_server, tradeinmode)
@@ -1611,9 +1656,8 @@ neverallow {
 allow system_server proc_pressure_mem:file rw_file_perms;
 # Read /proc/pressure/cpu and /proc/pressure/io
 allow system_server { proc_pressure_cpu proc_pressure_io }:file r_file_perms;
-
-# No ptracing others
-neverallow system_server { domain -system_server }:process ptrace;
+# Read /proc/diskstats to help debug IO stalls.
+allow system_server proc_diskstats:file r_file_perms;
 
 # CAP_SYS_RESOURCE was traditionally needed for sensitive /proc/PID
 # file read access. However, that is now unnecessary (b/34951864)
@@ -1688,6 +1732,7 @@ allow system_server binderfs_logs_stats:file r_file_perms;
 userdebug_or_eng(`
     allow system_server binderfs_logs_transactions:file r_file_perms;
 ')
+allow system_server binderfs_logs_transaction_history:file r_file_perms;
 
 # Allow GameManagerService to read and write persist.graphics.game_default_frame_rate.enabled
 set_prop(system_server, game_manager_config_prop)
@@ -1737,6 +1782,15 @@ allow system_server {
   profman
 }:process sigkill;
 
+# Allow system_server to talk to native serial service to read metadata of and open serial ports.
+starting_at_board_api(202602, `
+    allow system_server native_serial_service:service_manager find;
+    binder_call(system_server, serialservice)
+')
+
+# Allow system server to read and write serial devices
+allow system_server { serial_device usb_serial_device }:chr_file { read write };
+
 # Do not allow any domain other than init or system server to get or set the property
 neverallow { domain -init -system_server } crashrecovery_prop:property_service set;
 neverallow { domain -init -dumpstate -system_server } crashrecovery_prop:file no_rw_file_perms;
@@ -1765,3 +1819,5 @@ neverallow system_server self:global_capability_class_set sys_module;
 # descriptors (based off the fuse filesystem). Transfer of those proxy FDs
 # are unaffected by this neverallow assertion.
 neverallow { domain -system_server -init } appsearch_data_file:file { open read write };
+
+neverallow system_server *:process ptrace;

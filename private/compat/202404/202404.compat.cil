@@ -4,3 +4,5 @@
 
 (allow hal_wifi_supplicant self (capability (setuid)))
 (allow hal_wifi_supplicant self (cap_userns (setuid)))
+(allow hal_wifi_supplicant self (capability (setgid)))
+(allow hal_wifi_supplicant self (cap_userns (setgid)))

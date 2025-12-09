@@ -22,3 +22,6 @@ allow microdroid_app apex_mnt_dir:dir r_dir_perms;
 set_prop(microdroid_app, microdroid_encrypted_store_setup_prop);
 # Allow payload to get the status of encrypted store.
 get_prop(microdroid_app, microdroid_encrypted_store_status_prop);
+
+# Microdroid launches the tenant executables
+allow microdroid_app tenant_apk_file:file x_file_perms;

@@ -1,4 +1,7 @@
 type aidl_lazy_test_service,    service_manager_type;
+starting_at_board_api(202604, `
+  type anomaly_detector_service,  app_api_service, system_server_service, service_manager_type;
+')
 type apc_service,               service_manager_type;
 type apex_service,              service_manager_type;
 type artd_service,              service_manager_type;
@@ -37,6 +40,9 @@ type mediametrics_service,      service_manager_type;
 type mediaextractor_service,    service_manager_type;
 type mediadrmserver_service,    service_manager_type;
 type mediatranscoding_service,  app_api_service, service_manager_type;
+starting_at_board_api(202602, `
+    type native_serial_service,     service_manager_type;
+')
 type netd_service,              service_manager_type;
 type nfc_service,               service_manager_type;
 type ondevicepersonalization_system_service, system_api_service, system_server_service, service_manager_type;
@@ -190,7 +196,9 @@ type network_stack_service, system_server_service, service_manager_type;
 type network_time_update_service, system_server_service, service_manager_type;
 type notification_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type oem_lock_service, system_api_service, system_server_service, service_manager_type;
-type otadexopt_service, system_server_service, service_manager_type;
+until_board_api(202604, `
+    type otadexopt_service, system_server_service, service_manager_type;
+');
 type overlay_service, system_api_service, system_server_service, service_manager_type;
 type pac_proxy_service, app_api_service, system_server_service, service_manager_type;
 type package_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
@@ -227,7 +235,7 @@ type selection_toolbar_service, app_api_service, ephemeral_app_api_service, syst
 type sensitive_content_protection_service, app_api_service, system_server_service, service_manager_type;
 type sensorservice_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type sensor_privacy_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
-type serial_service, system_api_service, system_server_service, service_manager_type;
+type serial_service, app_api_service, system_api_service, system_server_service, service_manager_type;
 type servicediscovery_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type settings_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
 type shortcut_service, app_api_service, system_server_service, service_manager_type;
@@ -296,6 +304,9 @@ type hal_audiocontrol_service, hal_service_type, service_manager_type;
 type hal_authgraph_service, protected_service, hal_service_type, service_manager_type;
 type hal_authsecret_service, protected_service, hal_service_type, service_manager_type;
 type hal_bluetooth_service, protected_service, hal_service_type, service_manager_type;
+starting_at_board_api(202604, `
+type hal_bluetooth_lpp_service, protected_service, hal_service_type, service_manager_type;
+') # starting_at_board_api(202604)
 type hal_bootctl_service, protected_service, hal_service_type, service_manager_type;
 type hal_broadcastradio_service, protected_service, hal_service_type, service_manager_type;
 type hal_camera_service, protected_service, hal_service_type, service_manager_type;
@@ -309,6 +320,9 @@ type hal_dumpstate_service, protected_service, hal_service_type, service_manager
 type hal_evs_service, protected_service, hal_service_type, service_manager_type;
 type hal_face_service, protected_service, hal_service_type, service_manager_type;
 type hal_fastboot_service, protected_service, hal_service_type, service_manager_type;
+starting_at_board_api(202604, `
+  type hal_frp_service, protected_service, hal_service_type, service_manager_type;
+')
 type hal_fingerprint_service, protected_service, hal_service_type, service_manager_type;
 type hal_gnss_service, protected_service, hal_service_type, service_manager_type;
 type hal_graphics_allocator_service, hal_service_type, service_manager_type;

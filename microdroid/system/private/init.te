@@ -221,6 +221,9 @@ allow init {
   -exec_type
 }:dir_file_class_set relabelto;
 
+allow init proc:file write;
+allow init sysfs:file { open write };
+
 allow init { sysfs debugfs_tracing debugfs_tracing_debug }:{ dir file lnk_file } { getattr relabelfrom };
 allow init { sysfs_type tracefs_type }:{ dir file lnk_file } { relabelto getattr };
 allow init dev_type:dir create_dir_perms;
@@ -459,3 +462,4 @@ allow init kmsg_debug_device:chr_file { open write relabelto };
 
 # For pageout_bomb.rc.
 allow init proc_drop_caches:file w_file_perms;
+allow init proc_compact_memory:file w_file_perms;

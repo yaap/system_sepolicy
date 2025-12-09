@@ -61,6 +61,13 @@ is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, `
     allow early_virtmgr vendor_vm_file:file { read getattr };
     allow early_virtmgr vendor_vm_data_file:file { read write getattr };
 
+    # early_virtmgr reads tee_service_contexts_file to determine if VM is allowed
+    # to access requested tee services
+    allow early_virtmgr tee_service_contexts_file:file r_file_perms;
+    # early_virtmgr uses libselinux to check if VM is allowed to access requested
+    # tee services.
+    selinux_check_access(early_virtmgr)
+
     ###
     ### Neverallow rules
     ###

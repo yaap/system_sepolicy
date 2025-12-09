@@ -198,9 +198,9 @@ filegroup {
 }
 
 filegroup {
-    name: "com.android.telephony2-file_contexts",
+    name: "com.android.telephonycore-file_contexts",
     srcs: [
-        "com.android.telephony2-file_contexts",
+        "com.android.telephonycore-file_contexts",
     ],
 }
 
@@ -347,5 +347,12 @@ filegroup {
     name: "com.android.profiling-file_contexts",
     srcs: [
         "com.android.profiling-file_contexts",
+    ],
+}
+
+filegroup {
+    name: "com.google.android.gmssystem-file_contexts",
+    srcs: [
+        "com.google.android.gmssystem-file_contexts",
     ],
 }

@@ -23,6 +23,9 @@
 /(vendor|system/vendor)/bin/hw/android\.hardware\.bluetooth\.ranging-service\.default      u:object_r:hal_bluetooth_default_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.bluetooth\.lmp_event-service\.default    u:object_r:hal_bluetooth_default_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.bluetooth\.socket-service\.default       u:object_r:hal_bluetooth_default_exec:s0
+starting_at_board_api(202604, `
+/(vendor|system/vendor)/bin/hw/android\.hardware\.bluetooth\.gatt-service\.default         u:object_r:hal_bluetooth_lpp_default_exec:s0
+') # starting_at_board_api(202604)
 /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face@1\.[0-9]+-service\.example u:object_r:hal_face_default_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face-service\.example u:object_r:hal_face_default_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.face-service\.default u:object_r:hal_face_default_exec:s0

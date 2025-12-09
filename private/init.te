@@ -59,6 +59,9 @@ set_prop(init, powerctl_prop)
 
 set_prop(init, userspace_reboot_exported_prop)
 
+# Allow the media variant properties to be set in init.
+set_prop(init, media_variant_prop)
+
 # Second-stage init performs a test for whether the kernel has SELinux hooks
 # for the perf_event_open() syscall. This is done by testing for the syscall
 # outcomes corresponding to this policy.
@@ -288,7 +291,7 @@ allowxperm init system_data_root_file:dir ioctl F2FS_IOC_SHUTDOWN;
 allow init {
   fs_type
   enforce_debugfs_restriction(`-debugfs_type')
-}:filesystem ~relabelto;
+}:filesystem ~{ relabelto associate };
 
 # Allow init to mount/unmount debugfs in non-user builds.
 enforce_debugfs_restriction(`
@@ -719,7 +722,14 @@ allow init property_type:property_service set;
 # Send an SELinux userspace denial to the kernel audit subsystem,
 # so it can be picked up and processed by logd. These denials are
 # generated when an attempt to set a property is denied by policy.
-allow init self:netlink_audit_socket { create_socket_perms_no_ioctl nlmsg_relay };
+allow init self:netlink_audit_socket create_socket_perms_no_ioctl;
+
+# For kernel < 6.13
+allow init self:netlink_audit_socket nlmsg_relay;
+# For kernel >= 6.13
+allow init self:netlink_audit_socket nlmsg;
+allowxperm init self:netlink_audit_socket nlmsg AUDIT_USER_AVC;
+
 allow init self:global_capability_class_set audit_write;
 
 # Run "ifup lo" to bring up the localhost interface

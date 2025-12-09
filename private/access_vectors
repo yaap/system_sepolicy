@@ -403,6 +403,7 @@ inherits socket
 	nlmsg_write
 	nlmsg_readpriv
 	nlmsg_getneigh
+	nlmsg
 }
 
 class netlink_tcpdiag_socket
@@ -410,6 +411,7 @@ inherits socket
 {
 	nlmsg_read
 	nlmsg_write
+	nlmsg
 }
 
 class netlink_nflog_socket
@@ -420,6 +422,7 @@ inherits socket
 {
 	nlmsg_read
 	nlmsg_write
+	nlmsg
 }
 
 class netlink_selinux_socket
@@ -433,6 +436,7 @@ inherits socket
 	nlmsg_relay
 	nlmsg_readpriv
 	nlmsg_tty_audit
+	nlmsg
 }
 
 class netlink_dnrt_socket

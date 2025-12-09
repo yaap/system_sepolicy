@@ -29,4 +29,15 @@ expandattribute update_provider false;
 until_board_api(202604, `
 attribute treble_labeling_violators;
 expandattribute treble_labeling_violators false;
-')
+
+attribute mapper_sphal_domain;
+expandattribute mapper_sphal_domain false;
+
+attribute opengl_sphal_domain;
+expandattribute opengl_sphal_domain false;
+
+attribute vulkan_sphal_domain;
+expandattribute vulkan_sphal_domain false;
+
+hal_attribute(bluetooth_lpp);
+') # until_board_api(202604)

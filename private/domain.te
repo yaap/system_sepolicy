@@ -81,6 +81,23 @@ allow domain ashmem_device:chr_file { getattr read ioctl lock map append write }
 # This device is used by libcutils, which is accessible to everyone.
 allow domain ashmem_libcutils_device:chr_file rw_file_perms;
 
+# memfds are initially labeled as tmpfs files. Not all processes have access
+# to tmpfs files in general, or tmpfs files associated with specific domains.
+# This is in contrast to ashmem, where all domains could access ashmem fds.
+#
+# To allow for a smoother transition from ashmem to memfd, grant the
+# ability for processes to relabel tmpfs files to ashmem_compat_memfd,
+# which will have similar access control as ashmem. The files are relabeled
+# when allocated by libcutils.
+allow domain tmpfs:file { getattr relabelfrom };
+allow domain ashmem_compat_memfd:file { read write getattr ioctl map relabelto };
+allowxperm domain ashmem_compat_memfd:file ioctl ashmem_ioctls;
+
+# Everyone can allocate memory via libcutils, and therefore will all need
+# access to the file containing the type that libcutils must use for
+# relabeling memfds.
+allow domain ashmem_compat_memfd_context_file:file r_file_perms;
+
 # /dev/binder can be accessed by ... everyone! :)
 allow { domain -hwservicemanager -vndservicemanager } binder_device:chr_file rw_file_perms;
 get_prop({domain -hwservicemanager -vndservicemanager }, servicemanager_prop)
@@ -333,7 +350,7 @@ allow { domain -domain } hwservice_manager_type:hwservice_manager { add find };
 # when it's not explicitly used in allow rules
 allow { domain -domain } vndservice_manager_type:service_manager { add find };
 
-# Allow processes to find statsbootstrap service via service_manager
+# Allow processes to find binder_stats_consumer service via service_manager
 allow {
   domain
   -init
@@ -342,7 +359,7 @@ allow {
   -app_zygote
   -isolated_app_all
   -hal_configstore_server
-} statsbootstrap_service:service_manager find;
+} binder_stats_consumer_service:service_manager find;
 allow {
   domain
   -init
@@ -436,11 +453,9 @@ r_dir_file(domain, sysfs_fs_incfs_features);
 r_dir_file(domain, sysfs_fs_fuse_features);
 
 # Path resolution access in cgroups.
-allow domain cgroup:dir search;
 allow { domain -appdomain -rs } cgroup:dir w_dir_perms;
 allow { domain -appdomain -rs } cgroup:file w_file_perms;
 
-allow domain cgroup_v2:dir search;
 allow { domain -appdomain -rs } cgroup_v2:dir w_dir_perms;
 allow { domain -appdomain -rs } cgroup_v2:file w_file_perms;
 
@@ -519,6 +534,7 @@ get_prop(domain, locale_prop)
 get_prop(domain, logd_prop)
 get_prop(domain, mediadrm_config_prop)
 get_prop(domain, property_service_version_prop)
+get_prop(domain, service_sf_present_timestamp_prop)
 get_prop(domain, soc_prop)
 get_prop(domain, socket_hook_prop)
 get_prop(domain, surfaceflinger_prop)
@@ -529,6 +545,9 @@ get_prop(domain, vendor_socket_hook_prop)
 get_prop(domain, vndk_prop)
 get_prop(domain, vold_status_prop)
 get_prop(domain, vts_config_prop)
+# Allow all processes to read the information for native binder stats
+# configuration.
+get_prop(domain, native_binder_stats_prop)
 
 # Binder cache properties are world-readable
 get_prop(domain, binder_cache_bluetooth_server_prop)
@@ -925,6 +944,7 @@ full_treble_only(`
 
     -apc_service
     -audioserver_service # TODO(b/36783122) remove exemptions below once app_api_service is fixed
+    -binder_stats_consumer_service
     -cameraserver_service
     -drmserver_service
     -credstore_service
@@ -936,8 +956,8 @@ full_treble_only(`
     -mediametrics_service
     -mediaserver_service
     -nfc_service
+    -omapi_service
     -radio_service
-    -statsbootstrap_service
     -virtual_touchpad_service
     -vr_manager_service
     userdebug_or_eng(`-hal_face_service')
@@ -1277,6 +1297,7 @@ full_treble_only(`
     -vendor_init
   } {
     system_file_type
+    -ashmem_compat_memfd_context_file
     -cgroup_desc_file
     -crash_dump_exec
     -file_contexts_file
@@ -1434,8 +1455,31 @@ neverallow {
 # transitioned from the limited adbd_tradeinmode context. It is a wrapper
 # around "am" to avoid exposing the shell context when adbd is in trade-in
 # mode.
-neverallow { domain -simpleperf_app_runner -runas -app_zygote -webview_zygote -zygote } {
-  appdomain -shell -simpleperf userdebug_or_eng(`-su') -tradeinmode
+#
+# isolatd_app is excluded as its rule the defined below to allow zygote_next to transition to it.
+neverallow {
+  domain
+  -simpleperf_app_runner
+  -runas
+  -app_zygote
+  -webview_zygote
+  -zygote
+} {
+  appdomain -shell -simpleperf userdebug_or_eng(`-su') -tradeinmode -isolated_app
+}:process { transition dyntransition };
+
+# Only domains spawned from zygote, runas, simpleperf_app_runner, and zygote_next may have
+# the isolated_app attribute.
+neverallow {
+  domain
+  -simpleperf_app_runner
+  -runas
+  -app_zygote
+  -webview_zygote
+  -zygote
+  -zygote_next
+} {
+  isolated_app
 }:process { transition dyntransition };
 
 # Minimize read access to shell- or app-writable symlinks.
@@ -1446,13 +1490,6 @@ neverallow {
   -artd
   -installd
 } { app_data_file privapp_data_file }:lnk_file read;
-
-neverallow {
-  domain
-  -shell
-  userdebug_or_eng(`-uncrypt')
-  -installd
-} shell_data_file:lnk_file read;
 
 # servicemanager and vndservicemanager are the only processes which handle the
 # service_manager list request
@@ -1912,10 +1949,8 @@ neverallow {
   -init # TODO: limit init to relabelfrom for files
   -zygote
   -installd
-  -postinstall_dexopt
   -cppreopts
   -dex2oat
-  -otapreopt_slot
   -artd
 } dalvikcache_data_file:file no_w_file_perms;
 
@@ -1923,11 +1958,9 @@ neverallow {
   domain
   -init
   -installd
-  -postinstall_dexopt
   -cppreopts
   -dex2oat
   -zygote
-  -otapreopt_slot
   -artd
 } dalvikcache_data_file:dir no_w_dir_perms;
 
@@ -1986,7 +2019,6 @@ define(`dac_override_allowed', `{
   lmkd
   migrate_legacy_obb_data
   netd
-  postinstall_dexopt
   recovery
   rss_hwm_reset
   sdcardd
@@ -1997,6 +2029,7 @@ define(`dac_override_allowed', `{
   vold
   vold_prepare_subdirs
   zygote
+  zygote_next
   update_engine
   userdebug_or_eng(`overlay_remounter')
 }')
@@ -2022,7 +2055,6 @@ neverallow {
     recovery_only(`-fastbootd')
     -init
     -kernel
-    -otapreopt_chroot
     -recovery
     -update_engine
     -vold
@@ -2098,6 +2130,7 @@ full_treble_only(`
     -traced_perf
     -ueventd
     userdebug_or_eng(`-overlay_remounter')
+    -prefetch
   } vendor_file:file { no_w_file_perms no_x_file_perms open };
 ')
 
@@ -2143,6 +2176,7 @@ full_treble_only(`
     -traced_perf # library/binary access for symbolization
     -ueventd # reads /vendor/ueventd.rc
     -vold # loads incremental fs driver
+    -prefetch
     userdebug_or_eng(`-overlay_remounter')
   } {
     vendor_file_type
@@ -2192,13 +2226,12 @@ neverallow domain mlsvendorcompat:process fork;
 neverallow { -domain } *:binder *;
 neverallow * { -domain }:binder *;
 
-# Only init and otapreopt_chroot should be mounting filesystems on locations
+# Only init and dexopt_chroot_setup should be mounting filesystems on locations
 # labeled system or vendor (/product and /vendor respectively).
 neverallow {
   domain
   -dexopt_chroot_setup
   -init
-  -otapreopt_chroot
   userdebug_or_eng(`-overlay_remounter')
   userdebug_or_eng(`-zygote')
 } {
@@ -2228,6 +2261,7 @@ neverallow {
 neverallow {
   domain
   -init
+  -bpfloader
   -traced_probes
   -traced_perf
   userdebug_or_eng(`-profcollectd')
@@ -2266,72 +2300,6 @@ neverallow {
   -bpfloader
   -uprobestats
 } self:capability2 perfmon;
-
-# Restrict direct access to shell owned files. The /data/local/tmp directory is
-# untrustworthy, and non-allowed domains should not be trusting any content in
-# those directories. We allow shell files to be passed around by file
-# descriptor, but not directly opened.
-# artd doesn't need to access /data/local/tmp, but it needs to access
-# /data/{user,user_de}/<user-id>/com.android.shell/... for compiling secondary
-# dex files.
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -artd
-  -dumpstate
-  -installd
-  userdebug_or_eng(`-uncrypt')
-  userdebug_or_eng(`-virtualizationmanager')
-  userdebug_or_eng(`-virtualizationservice')
-  userdebug_or_eng(`-crosvm')
-} shell_data_file:file open;
-
-# In addition to the symlink reading restrictions above, restrict
-# write access to shell owned directories. The /data/local/tmp
-# directory is untrustworthy, and non-allowed domains should
-# not be trusting any content in those directories.
-# artd doesn't need to access /data/local/tmp, but it needs to access
-# /data/{user,user_de}/<user-id>/com.android.shell/... for compiling secondary
-# dex files.
-neverallow {
-  domain
-  -adbd
-  -artd
-  -dumpstate
-  -installd
-  -init
-  -shell
-  -vold
-} shell_data_file:dir no_w_dir_perms;
-
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -artd
-  -dumpstate
-  -init
-  -installd
-  -simpleperf_app_runner
-  -system_server # why?
-  userdebug_or_eng(`-uncrypt')
-} shell_data_file:dir open;
-
-neverallow {
-  domain
-  -adbd
-  -appdomain
-  -artd
-  -dumpstate
-  -init
-  -installd
-  -simpleperf_app_runner
-  -system_server # why?
-  userdebug_or_eng(`-uncrypt')
-  userdebug_or_eng(`-virtualizationmanager')
-  userdebug_or_eng(`-crosvm')
-} shell_data_file:dir search;
 
 # respect system_app sandboxes
 neverallow {
@@ -2376,6 +2344,7 @@ neverallow {
     -virtualizationmanager
     -virtualizationservice
     -adbd_common # maybe should move to emulator/virtual device specific policy
+    -traced # traced listens to connections from guest VMs
 
     # not expected, and defined outside of system/sepolicy.
     # Note: this attribute is strongly recommended to be empty if not required.
@@ -2383,8 +2352,6 @@ neverallow {
 
     # these are permissions that should be removed, and they are here for visibility.
     -compos_fd_server   # TODO: get connections from virtmanager
-    -hal_keymint_system # TODO: get connections from virtmanager
-    -hal_widevine_system # TODO: get connections from virtmanager
     -vmlauncher_app     # TODO: get connections from virtmanager
 } *:vsock_socket { connect create accept bind };
 
@@ -2393,3 +2360,10 @@ neverallow domain *:system { kexec_image_load kexec_initramfs_load };
 
 # READING_X509_CERTIFICATE is not used.
 neverallow domain *:system x509_certificate_load;
+
+# attempts to write to /proc/self/fd/FOO, where FOO does not exist,
+# generates SELinux denials prior to being stopped by other parts of
+# the kernel. Disallow such nonsensical allow rules
+neverallow domain proc:filesystem associate;
+neverallow domain domain:dir { write add_name remove_name };
+neverallow domain domain:file create;

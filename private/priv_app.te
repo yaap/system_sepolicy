@@ -140,6 +140,7 @@ get_prop(priv_app, adbd_tradeinmode_prop)
 dontaudit priv_app exec_type:file getattr;
 dontaudit priv_app device:dir read;
 dontaudit priv_app fs_bpf:dir search;
+dontaudit priv_app metadata_file:dir read;
 dontaudit priv_app net_dns_prop:file read;
 dontaudit priv_app proc:file read;
 dontaudit priv_app proc_interrupts:file read;
@@ -289,3 +290,7 @@ neverallow priv_app *:{
   bluetooth_socket iucv_socket rxrpc_socket isdn_socket phonet_socket ieee802154_socket caif_socket
   alg_socket nfc_socket kcm_socket qipcrtr_socket smc_socket xdp_socket
 } *;
+
+# Disallow sending RTM_GETLINK messages on netlink sockets.
+neverallow priv_app domain:netlink_route_socket { bind nlmsg_readpriv };
+neverallowxperm priv_app domain:netlink_route_socket nlmsg RTM_GETLINK;

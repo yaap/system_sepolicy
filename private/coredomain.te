@@ -29,6 +29,7 @@ get_prop(coredomain, vold_config_prop)
 get_prop(coredomain, vts_status_prop)
 get_prop(coredomain, zygote_config_prop)
 get_prop(coredomain, zygote_wrap_prop)
+get_prop(coredomain, arm64_memtag_bootctl_prop)
 
 # TODO(b/170590987): remove this after cleaning up default_prop
 get_prop(coredomain, default_prop)
@@ -60,10 +61,10 @@ full_treble_only(`
         -init
         -installd
         -heapprofd
-        -postinstall_dexopt
         -rs # spawned by appdomain, so carryover the exception above
         -system_server
         -traced_perf
+        -prefetch
         userdebug_or_eng(`-overlay_remounter')
     } vendor_app_file:dir { open read getattr search };
 ')
@@ -79,13 +80,13 @@ full_treble_only(`
         -installd
         -heapprofd
         userdebug_or_eng(`-profcollectd')
-        -postinstall_dexopt
         -profman
         -rs # spawned by appdomain, so carryover the exception above
         userdebug_or_eng(`-simpleperf_boot')
         -system_server
         -traced_perf
         -mediaserver
+        -prefetch
         userdebug_or_eng(`-overlay_remounter')
     } vendor_app_file:file r_file_perms;
 ')
@@ -100,7 +101,6 @@ full_treble_only(`
         -idmap
         -init
         -installd
-        -postinstall_dexopt
         -rs # spawned by appdomain, so carryover the exception above
         -system_server
         -traced_perf
@@ -108,6 +108,7 @@ full_treble_only(`
         -webview_zygote
         -zygote
         -heapprofd
+        -prefetch
         userdebug_or_eng(`-overlay_remounter')
     } vendor_overlay_file:dir { getattr open read search };
 ')
@@ -121,7 +122,6 @@ full_treble_only(`
         -idmap
         -init
         -installd
-        -postinstall_dexopt
         -rs # spawned by appdomain, so carryover the exception above
         -system_server
         -traced_perf
@@ -129,6 +129,7 @@ full_treble_only(`
         -webview_zygote
         -zygote
         -heapprofd
+        -prefetch
         userdebug_or_eng(`-profcollectd')
         userdebug_or_eng(`-simpleperf_boot')
         userdebug_or_eng(`-overlay_remounter')
