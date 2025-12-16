@@ -2365,5 +2365,6 @@ neverallow domain *:system x509_certificate_load;
 # generates SELinux denials prior to being stopped by other parts of
 # the kernel. Disallow such nonsensical allow rules
 neverallow domain proc:filesystem associate;
-neverallow domain domain:dir { write add_name remove_name };
+neverallow { domain -init_dir_mutation_exempt } domain:dir { write add_name remove_name };
+neverallow init_dir_mutation_exempt { domain -init }:dir {write add_name remove_name};
 neverallow domain domain:file create;

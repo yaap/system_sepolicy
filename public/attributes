@@ -61,6 +61,9 @@ attribute vendor_file_type;
 attribute proc_type;
 expandattribute proc_type false;
 
+# Allowlisted domains that may violate the domain:dir restrictions on init
+attribute init_dir_mutation_exempt;
+
 # Types in /proc/net, excluding qtaguid types.
 # TODO(b/9496886) Lock down access to /proc/net.
 # This attribute is used to audit access to proc_net. it is temporary and will
