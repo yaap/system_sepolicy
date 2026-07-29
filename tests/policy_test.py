@@ -45,12 +45,12 @@ class PolicyTests(unittest.TestCase):
         self.assertMatches("(/.*)+", "/system/etc/vintf")
         self.assertDoesNotMatch("(/.*)+", "foo/bar/baz")
 
-        self.assertMatches("/(system|product)/lib(64)?(/.*)+.*\.so", "/system/lib/hw/libbaz.so")
-        self.assertMatches("/(system|product)/lib(64)?(/.*)+.*\.so", "/system/lib64/")
-        self.assertMatches("/(system|product)/lib(64)?(/.*)+.*\.so", "/product/lib/hw/libbaz.so")
-        self.assertMatches("/(system|product)/lib(64)?(/.*)+.*\.so", "/product/lib64/")
-        self.assertDoesNotMatch("/(system|product)/lib(64)?(/.*)+.*\.so", "/vendor/lib/hw/libbaz.so")
-        self.assertDoesNotMatch("/(system|product)/lib(64)?(/.*)+.*\.so", "/odm/lib64/")
+        self.assertMatches(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/system/lib/hw/libbaz.so")
+        self.assertMatches(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/system/lib64/")
+        self.assertMatches(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/product/lib/hw/libbaz.so")
+        self.assertMatches(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/product/lib64/")
+        self.assertDoesNotMatch(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/vendor/lib/hw/libbaz.so")
+        self.assertDoesNotMatch(r"/(system|product)/lib(64)?(/.*)+.*\.so", "/odm/lib64/")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

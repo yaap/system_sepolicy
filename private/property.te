@@ -1,10 +1,14 @@
 # Properties used only in /system
+system_internal_prop(adb_timeout_prop)
 system_internal_prop(adbd_prop)
 system_internal_prop(adbd_tradeinmode_prop)
+system_internal_prop(aiseal_prop)
 system_internal_prop(apexd_payload_metadata_prop)
 system_internal_prop(apexd_private_prop)
 system_internal_prop(appsearch_vm_prop)
 system_internal_prop(bluetooth_lea_prop)
+system_internal_prop(casefolding_status_prop)
+system_internal_prop(casefolding_override_prop)
 system_internal_prop(ctl_snapuserd_prop)
 system_internal_prop(ctl_prefetch_prop)
 system_internal_prop(ctl_uprobestats_prop)
@@ -12,6 +16,7 @@ system_internal_prop(crashrecovery_prop)
 system_internal_prop(debug_tracing_desktop_mode_visible_tasks_prop)
 system_internal_prop(device_config_core_experiments_team_internal_prop)
 system_internal_prop(device_config_lmkd_native_prop)
+system_internal_prop(device_config_memory_management_native_boot_prop)
 system_internal_prop(device_config_mglru_native_prop)
 system_internal_prop(device_config_mmd_native_prop)
 system_internal_prop(device_config_profcollect_native_boot_prop)
@@ -87,6 +92,9 @@ system_internal_prop(trusty_security_vm_sys_prop)
 system_internal_prop(trusty_widevine_vm_sys_prop)
 system_internal_prop(hint_manager_config_prop)
 system_internal_prop(avf_vm_traced_relay_enabled_prop)
+system_internal_prop(zygote_zygote_next_server_status_prop)
+system_internal_prop(zygote_zygote_next_boot_config_prop)
+system_internal_prop(pcc_audit_mode_prop)
 
 # Properties which can't be written outside system
 system_restricted_prop(binder_cache_adservices_server_prop)
@@ -95,29 +103,29 @@ system_restricted_prop(device_config_virtualization_framework_native_prop)
 system_restricted_prop(fstype_prop)
 system_restricted_prop(log_file_logger_prop)
 system_restricted_prop(mmd_shared_status_prop)
-system_restricted_prop(native_binder_stats_prop)
-system_restricted_prop(persist_sysui_builder_extras_prop)
-system_restricted_prop(persist_sysui_ranking_update_prop)
 system_restricted_prop(page_size_prop)
 system_restricted_prop(pm_16kb_app_compat_prop)
-system_restricted_prop(remote_prov_prop)
 system_restricted_prop(service_sf_present_timestamp_prop)
 system_restricted_prop(statsd_atoms_list_version_prop)
 system_restricted_prop(trusty_coverage_prop)
+system_restricted_prop(pcc_audit_mode_client_prop)
+system_restricted_prop(dumpstate_last_id_prop)
+
+# Device thermal property
+system_restricted_prop(thermal_profile_prop)
 
 # Properties which should only be written by vendor_init
 system_vendor_config_prop(arm64_memtag_bootctl_prop)
 system_vendor_config_prop(avf_virtualizationservice_prop)
+system_vendor_config_prop(context_hub_chipset_prop)
 system_vendor_config_prop(high_barometer_quality_prop)
 system_vendor_config_prop(mmd_prop)
 system_vendor_config_prop(mmd_shared_prop)
 system_vendor_config_prop(prefetch_boot_prop)
 system_vendor_config_prop(sensors_hal_prop)
+system_vendor_config_prop(strongbox_prop)
 system_vendor_config_prop(usb_disable_when_locked_prop)
 system_vendor_config_prop(userdata_alias_remove_prop)
-until_board_api(202604, `
-    system_vendor_config_prop(wallet_prop)
-')
 
 typeattribute log_prop log_property_type;
 typeattribute log_tag_prop log_property_type;
@@ -608,6 +616,8 @@ neverallow {
   -init
   -shell
   -kcmdlinectrl
+  -aconfigd
+  -aconfigd_mainline
 } {
   kcmdline_prop
 }:property_service set;
@@ -805,6 +815,7 @@ neverallow {
   -shell
   -system_server
   -rkpdapp
+  -vendor_init
 } remote_prov_prop:property_service set;
 
 neverallow {

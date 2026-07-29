@@ -20,6 +20,7 @@ import unittest
 
 import apex_sepolicy_tests as apex
 import policy
+import utils
 
 
 # pylint: disable=missing-docstring
@@ -28,8 +29,8 @@ class ApexSepolicyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_dir = tempfile.mkdtemp()
-        lib_path = apex.extract_data(apex.LIBSEPOLWRAP, cls.temp_dir)
-        policy_path = apex.extract_data('precompiled_sepolicy', cls.temp_dir)
+        lib_path = policy.ReadLibsepolwrap(cls.temp_dir)
+        policy_path = utils.extract_data(cls.temp_dir, 'precompiled_sepolicy')
         cls.pol = policy.Policy(policy_path, None,  lib_path)
 
     @classmethod

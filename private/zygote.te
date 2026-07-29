@@ -120,6 +120,7 @@ allow zygote proc_filesystems:file r_file_perms;
 allow zygote self:process execmem;
 allow zygote zygote_tmpfs:file execute;
 allow zygote ashmem_libcutils_device:chr_file execute;
+allow zygote zygote:memfd_file execute;
 
 # Execute idmap and dex2oat within zygote's own domain.
 # TODO:  Should either of these be transitioned to the same domain
@@ -197,7 +198,6 @@ userdebug_or_eng(`
   allow zygote method_trace_data_file:file { create w_file_perms };
 ')
 
-allow zygote ion_device:chr_file r_file_perms;
 allow zygote tmpfs:dir r_dir_perms;
 
 allow zygote same_process_hal_file:file { execute read open getattr map };
@@ -220,7 +220,7 @@ get_prop(zygote, device_config_runtime_native_boot_prop)
 # to initialize WindowManager static properties.
 get_prop(zygote, device_config_window_manager_native_boot_prop)
 
-# ingore spurious denials
+# Ignore spurious denials
 # fsetid can be checked as a consequence of chmod when using cgroup v2 uid/pid hierarchy. This is
 # done to determine if the file should inherit setgid. In this case, setgid on the file is
 # undesirable, so suppress the denial.
@@ -253,12 +253,6 @@ get_prop(zygote, qemu_sf_lcd_density_prop)
 # Allow zygote to read persist.wm.debug.* to toggle experimental window manager features in
 # preloaded classes
 get_prop(zygote, persist_wm_debug_prop)
-
-# Allow zygote to read persist_sysui_builder_extras_prop
-# and persist_sysui_ranking_update_prop
-# to toggle experimental features in core preloaded classes
-get_prop(zygote, persist_sysui_builder_extras_prop)
-get_prop(zygote, persist_sysui_ranking_update_prop)
 
 # Allow zygote to read /apex/apex-info-list.xml
 allow zygote apex_info_file:file r_file_perms;

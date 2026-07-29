@@ -7,3 +7,6 @@ init_daemon_domain(hal_contexthub_default)
 # Allow Context Hub HAL to talk to the stats service for metric collection
 allow hal_contexthub_default fwk_stats_service:service_manager find;
 binder_call(hal_contexthub_default, stats_service_server)
+
+# Allow access for Contect Hub HAL properties.
+get_prop(hal_contexthub_default, vendor_chre_hal_prop)

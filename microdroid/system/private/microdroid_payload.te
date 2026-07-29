@@ -22,7 +22,7 @@ get_prop(microdroid_payload, servicemanager_prop)
 allow microdroid_payload microdroid_manager:vsock_socket { read write };
 
 # Write to /dev/kmsg.
-allow microdroid_payload kmsg_device:chr_file rw_file_perms;
+allow microdroid_payload kmsg_device:chr_file w_file_perms;
 
 # Read from console. Note that both /dev/kmsg and /dev/console are backed
 # by the same file in the host.
@@ -63,12 +63,20 @@ unix_socket_connect(microdroid_payload, vm_payload_service, microdroid_manager)
 # Allow payload to communicate with microdroid manager through IServiceManager
 unix_socket_connect(microdroid_payload, rpc_servicemanager, microdroid_manager)
 
+# Allow payload to read and write on the sockets files managed by
+# microdroid_manager.
+allow microdroid_payload microdroid_managed_socket_dir:sock_file rw_file_perms;
+
 # Payload can read, write into encrypted storage directory
 allow microdroid_payload encryptedstore_file:dir create_dir_perms;
 allow microdroid_payload encryptedstore_file:file create_file_perms;
 
 # Payload can access devices labeled as payload accessible.
 allow microdroid_payload payload_accessible_device:chr_file rw_file_perms;
+
+# Allow the Microdroid payload to execute shared libraries (.so files) located
+# within the test APK.
+allow microdroid_payload tenant_apk_file:file x_file_perms;
 
 # Never allow microdroid_payload to connect to vsock
 neverallow microdroid_payload self:vsock_socket connect;

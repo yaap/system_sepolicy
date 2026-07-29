@@ -41,8 +41,10 @@ allow encryptedstore tmpfs:dir  { add_name create mounton write };
 allow encryptedstore labeledfs:filesystem { relabelfrom };
 allow encryptedstore encryptedstore_fs:filesystem { mount unmount relabelto relabelfrom };
 
+# allow encryptedstore to create and assign dedicated directories for each payload
+allow encryptedstore self:global_capability_class_set { chown };
 # chmod the root directory (and check it)
-allow encryptedstore encryptedstore_file:dir { getattr setattr };
+allow encryptedstore encryptedstore_file:dir { getattr setattr create_dir_perms };
 
 # allow encryptedstore to log to the kernel
 allow encryptedstore kmsg_device:chr_file w_file_perms;
@@ -67,3 +69,9 @@ set_prop(encryptedstore, microdroid_encrypted_store_status_prop);
 neverallow { domain -microdroid_manager } encryptedstore:process { transition dyntransition };
 
 unix_socket_connect(encryptedstore, vm_internal_service, microdroid_manager)
+
+# Allow encryptedstore to retain CAP_SYS_NICE for scheduling priority changes.
+allow encryptedstore self:global_capability_class_set { sys_nice };
+
+# Permit encryptedstore to change its scheduling policy using setsched.
+allow encryptedstore kernel:process setsched;

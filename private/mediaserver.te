@@ -3,6 +3,11 @@ typeattribute mediaserver coredomain;
 init_daemon_domain(mediaserver)
 tmpfs_domain(mediaserver)
 allow mediaserver appdomain_tmpfs:file { getattr map read write };
+allow mediaserver appdomain:memfd_file { getattr map read write };
+
+allow mediaserver audioserver:memfd_file { getattr map read write };
+# MediaBufferGroup access
+allow mediaserver mediaextractor:memfd_file { getattr map read write };
 
 # allocate and use graphic buffers
 hal_client_domain(mediaserver, hal_graphics_allocator)
@@ -34,6 +39,10 @@ binder_call(mediaserver, statsd)
 # by virtual camera.
 binder_call(mediaserver, virtual_camera)
 
+# Allow mediaserver to find and call mediacodeclist_generator
+allow mediaserver mediacodeclist_generator_service:service_manager find;
+binder_call(mediaserver, mediacodeclist_generator)
+
 typeattribute mediaserver mlstrustedsubject;
 
 net_domain(mediaserver)
@@ -63,8 +72,7 @@ allow mediaserver media_data_file:dir create_dir_perms;
 allow mediaserver media_data_file:file create_file_perms;
 allow mediaserver { app_data_file privapp_data_file }:file { append getattr ioctl lock map read write };
 allow mediaserver { sdcard_type fuse }:file write;
-allow mediaserver gpu_device:chr_file rw_file_perms;
-allow mediaserver gpu_device:dir r_dir_perms;
+gpu_sphal_use(mediaserver)
 allow mediaserver video_device:dir r_dir_perms;
 allow mediaserver video_device:chr_file rw_file_perms;
 
@@ -159,7 +167,6 @@ allow mediaserver media_rw_data_file:file create_file_perms;
 # Access to media in /data/preloads
 allow mediaserver preloads_media_file:file { getattr read ioctl };
 
-allow mediaserver ion_device:chr_file r_file_perms;
 allow mediaserver dmabuf_system_heap_device:chr_file r_file_perms;
 allow mediaserver dmabuf_system_secure_heap_device:chr_file r_file_perms;
 allow mediaserver hal_graphics_allocator:fd use;

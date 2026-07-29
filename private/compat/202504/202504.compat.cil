@@ -6,3 +6,31 @@
 (allow hal_wifi_supplicant self (cap_userns (setuid)))
 (allow hal_wifi_supplicant self (capability (setgid)))
 (allow hal_wifi_supplicant self (cap_userns (setgid)))
+
+(type crosvm)
+(typeattributeset crosvm_domain crosvm)
+(type early_virtmgr)
+(typeattributeset early_virtmgr_domain early_virtmgr)
+(type virtualizationmanager)
+(typeattributeset virtualizationmanager_domain virtualizationmanager)
+
+;; domain_auto_trans(early_virtmgr, crosvm_exec, crosvm)
+(allow early_virtmgr crosvm_exec (file (read getattr map execute open)))
+(allow early_virtmgr crosvm (process (transition)))
+(allow crosvm crosvm_exec (file (read getattr map execute open entrypoint)))
+(allow crosvm early_virtmgr (process (sigchld)))
+(dontaudit early_virtmgr crosvm (process (noatsecure)))
+(allow early_virtmgr crosvm (process (siginh rlimitinh)))
+(typetransition early_virtmgr crosvm_exec process crosvm)
+
+;; domain_auto_trans(virtualizationmanager, crosvm_exec, crosvm)
+(allow virtualizationmanager crosvm_exec (file (read getattr map execute open)))
+(allow virtualizationmanager crosvm (process (transition)))
+(allow crosvm virtualizationmanager (process (sigchld)))
+(dontaudit virtualizationmanager crosvm (process (noatsecure)))
+(allow virtualizationmanager crosvm (process (siginh rlimitinh)))
+(typetransition virtualizationmanager crosvm_exec process crosvm)
+
+;; New system images do not allow open() to work on ashmem for all domains,
+;; so add it for compatibility with older vendor images.
+(allow domain ashmem_libcutils_device (chr_file (open)))

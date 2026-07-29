@@ -1,0 +1,12 @@
+# Domain for a child process that manages virtual machines on behalf of its parent.
+until_board_api(202604, `
+type virtualizationmanager, domain, coredomain;
+')
+starting_at_board_api(202604, `
+type virtualizationmanager_vendor, domain, coredomain, virtualizationmanager_domain;
+')
+type virtualizationmanager_exec, system_file_type, exec_type, file_type;
+
+# system/sepolicy/public is for vendor-facing type and attribute definitions.
+# DO NOT ADD allow, neverallow, or dontaudit statements here.
+# Instead, add such policy rules to system/sepolicy/private/*.te.

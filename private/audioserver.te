@@ -76,6 +76,10 @@ userdebug_or_eng(`
   allow audioserver su:unix_stream_socket { read write };
 ')
 
+# Allow access to health and power stats for battery and power analysis.
+hal_client_domain(audioserver, hal_health)
+hal_client_domain(audioserver, hal_power_stats)
+
 # Allow write access to log tag property
 set_prop(audioserver, log_tag_prop);
 
@@ -86,11 +90,17 @@ allow audioserver hal_audio_server:process signal;
 allow audioserver sensorservice_service:service_manager find;
 allow audioserver system_server:unix_stream_socket { read write };
 
+allow audioserver system_server:memfd_file { getattr map read write };
+allow audioserver appdomain:memfd_file { getattr map read write };
+
 # Allow using wake locks
 wakelock_use(audioserver)
 
 # Allow wake from suspend
 allow audioserver self:capability2 wake_alarm;
+
+# Allow setting nice for thread priority
+allow audioserver self:capability sys_nice;
 
 # Allow reading audio config props, e.g. af.fast_track_multiplier
 get_prop(audioserver, audio_config_prop)

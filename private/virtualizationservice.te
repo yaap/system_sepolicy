@@ -2,7 +2,7 @@ type virtualizationservice, domain, coredomain;
 type virtualizationservice_exec, system_file_type, exec_type, file_type;
 
 # The domain needs to be a 'mlstrustedsubject' to change the memlock rlimit of
-# the virtualizationmanager domain running at a more constrained MLS level.
+# the virtualizationmanager_domain domain running at a more constrained MLS level.
 typeattribute virtualizationservice mlstrustedsubject;
 
 # When init runs a file labelled with virtualizationservice_exec, run it in the
@@ -49,15 +49,15 @@ allow virtualizationservice remote_provisioning_service:service_manager find;
 
 # Allow virtualizationservice to retrieve information about IVirtualMachine from virtmgr
 # for accounting purpose
-binder_call(virtualizationservice, virtualizationmanager)
+binder_call(virtualizationservice, virtualizationmanager_domain)
 
 # Allow virtualizationservice to manage VM secrets via Secretkeeper.
 hal_client_domain(virtualizationservice, hal_secretkeeper)
 
-# Let virtualizationservice remove memlock rlimit of virtualizationmanager. This is necessary
+# Let virtualizationservice remove memlock rlimit of virtualizationmanager_domain. This is necessary
 # to mlock VM memory and page tables.
 allow virtualizationservice self:capability sys_resource;
-allow virtualizationservice virtualizationmanager:process setrlimit;
+allow virtualizationservice virtualizationmanager_domain:process setrlimit;
 
 is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
   # To provide display service to an app to get surface.
@@ -69,7 +69,7 @@ is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
 allow virtualizationservice self:capability chown;
 
 # Let virtualizationservice create and delete temporary directories of VMs. To remove old
-# directories, it needs the permission to unlink the files created by virtualizationmanager.
+# directories, it needs the permission to unlink the files created by virtualizationmanager_domain.
 allow virtualizationservice virtualizationservice_data_file:dir create_dir_perms;
 allow virtualizationservice virtualizationservice_data_file:sock_file unlink;
 allow virtualizationservice virtualizationservice_data_file:file create_file_perms;
@@ -119,8 +119,8 @@ allow virtualizationservice tombstoned:fd use;
 allow virtualizationservice vfio_device:chr_file getattr;
 allow virtualizationservice vfio_device:dir r_dir_perms;
 
-# Allow virtualizationservice to access VM DTBO via a file created by virtualizationmanager.
-allow virtualizationservice virtualizationmanager:fd use;
+# Allow virtualizationservice to access VM DTBO via a file created by virtualizationmanager_domain.
+allow virtualizationservice virtualizationmanager_domain:fd use;
 
 # Allow virtualizationservice to access vendor_configs_file to get the list of assignable devices.
 r_dir_file(virtualizationservice, vendor_configs_file)
@@ -134,16 +134,16 @@ neverallow {
 neverallow {
   domain
   -init
-  -virtualizationmanager
+  -virtualizationmanager_domain
   -virtualizationservice
 } virtualizationservice_data_file:file { open create };
 
 neverallow virtualizationservice {
   domain
-  -virtualizationmanager
+  -virtualizationmanager_domain
   -virtualizationservice
   # TODO(b/332677707): remove them when display service uses binder RPC.
-  -crosvm
+  -crosvm_domain
 }:process setrlimit;
 
 is_flag_enabled(RELEASE_AVF_ENABLE_NETWORK, `
@@ -153,6 +153,10 @@ is_flag_enabled(RELEASE_AVF_ENABLE_NETWORK, `
 ')
 
 is_flag_enabled(RELEASE_AVF_ENABLE_DEVICE_ASSIGNMENT, `
-    # Only virtualizationservice and virtualizationmanager can communicate to vfio_handler
-    neverallow { domain -virtualizationmanager -virtualizationservice -servicemanager } vfio_handler:binder call;
+    # Only virtualizationservice and virtualizationmanager_domain can communicate to vfio_handler
+    neverallow { domain -virtualizationmanager_domain -virtualizationservice -servicemanager } vfio_handler:binder call;
 ')
+
+# Opening up virtualization_maintenance_service to arbitray domains would allow
+# them to trigger VM deletions leading to data loss. Neverallow this.
+neverallow {domain -system_server -virtualizationservice -dumpstate -atrace -traceur_app} virtualization_maintenance_service:service_manager find;

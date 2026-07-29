@@ -1,0 +1,22 @@
+###
+### Apps signed with the platform key with target SDK versions <= 36.
+###
+
+until_board_api(202604, `
+  type platform_app_36, domain;
+')
+
+typeattribute platform_app_36 coredomain;
+
+app_domain(platform_app_36)
+
+# Access the network.
+net_domain(platform_app_36)
+# Access bluetooth.
+bluetooth_domain(platform_app_36)
+
+platform_app_domain(platform_app_36)
+
+allow platform_app_36 domain:memfd_file ioctl;
+allowxperm platform_app_36 domain:memfd_file ioctl ashmem_ioctls;
+allow platform_app_36 ashmem_libcutils_device:chr_file open;

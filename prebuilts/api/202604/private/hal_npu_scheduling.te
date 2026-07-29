@@ -1,0 +1,11 @@
+starting_at_board_api(202604, `
+  binder_call(hal_npu_scheduling_client, hal_npu_scheduling_server)
+  binder_call(hal_npu_scheduling_server, hal_npu_scheduling_client)
+  binder_use(hal_npu_scheduling_server)
+
+  hal_attribute_service(hal_npu_scheduling, hal_npu_scheduling_service)
+  hal_client_domain(system_server, hal_npu_scheduling)
+
+  allow hal_npu_scheduling_server dumpstate:fifo_file write;
+')
+

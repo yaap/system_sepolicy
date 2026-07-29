@@ -1,0 +1,14 @@
+# aiseal_agent_tenant is a specialized domain for running appsearch agent in Microdroid
+
+type aiseal_agent_tenant, domain, coredomain, microdroid_payload;
+type aiseal_agent_tenant_exec, exec_type, file_type, system_file_type;
+
+# Allow aiseal_agent_tenant to write to the kernel log
+allow aiseal_agent_tenant kmsg_device:chr_file w_file_perms;
+allow aiseal_agent_tenant kmsg_debug_device:chr_file w_file_perms;
+
+# Allow aiseal_agent_tenant to act as a client on Unix domain sockets created by
+# microdroid_manager, enabling it to communicate over connections.
+allow aiseal_agent_tenant microdroid_manager:unix_stream_socket {
+  read write getattr
+};

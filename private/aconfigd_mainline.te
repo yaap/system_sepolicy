@@ -22,6 +22,9 @@ allow aconfigd_mainline {
 # allow aconfigd_mainline to log to the kernel.
 allow aconfigd_mainline kmsg_device:chr_file write;
 
+# interact with kcmdline properties to inform bootloader about relevant flags
+set_prop(aconfigd_mainline, kcmdline_prop)
+
 # allow aconfigd_mainline to read /apex dir, aconfigd_mainline need to loop thru all
 # dirs under /apex to find all currently mounted mainline modules and get their
 # storage files

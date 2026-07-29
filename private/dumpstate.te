@@ -1,4 +1,5 @@
 typeattribute dumpstate coredomain;
+typeattribute dumpstate bpfdomain;
 type dumpstate_tmpfs, file_type;
 
 init_daemon_domain(dumpstate)
@@ -70,6 +71,9 @@ binder_call(dumpstate, ot_daemon)
 # Allow dumpstate to talk to mmd service over binder
 binder_call(dumpstate, mmd)
 
+# Allow dumpstate to talk to usbauthservice over binder
+binder_call(dumpstate, usbauthservice)
+
 # Collect metrics on boot time created by init
 get_prop(dumpstate, boottime_prop)
 
@@ -101,6 +105,8 @@ no_debugfs_restriction(`
 allow dumpstate dev_type:blk_file getattr;
 allow dumpstate webview_zygote:process signal;
 allow dumpstate sysfs_dmabuf_stats:file r_file_perms;
+allow dumpstate fs_bpf_dmabuf:dir search;
+allow dumpstate fs_bpf_dmabuf:file { getattr open read };
 dontaudit dumpstate update_engine:binder call;
 
 # Read files in /proc
@@ -114,6 +120,7 @@ allow dumpstate {
 # dumpstate_prop is used to share state with the Shell app.
 set_prop(dumpstate, dumpstate_prop)
 set_prop(dumpstate, exported_dumpstate_prop)
+set_prop(dumpstate, dumpstate_last_id_prop)
 
 # dumpstate_options_prop is used to pass extra command-line args.
 set_prop(dumpstate, dumpstate_options_prop)
@@ -133,13 +140,6 @@ allow dumpstate gsid_exec:file rx_file_perms;
 set_prop(dumpstate, ctl_gsid_prop)
 binder_call(dumpstate, gsid)
 
-#Allow access to /dev/binderfs/binder_logs
-userdebug_or_eng(`
-    allow dumpstate binderfs_logs_transactions:file r_file_perms;
-')
-dontaudit dumpstate binderfs_logs_transactions:file r_file_perms;
-allow dumpstate binderfs_logs_transaction_history:file r_file_perms;
-
 r_dir_file(dumpstate, ota_metadata_file)
 
 # For starting (and killing) perfetto --save-for-bugreport. If a labelled trace
@@ -156,6 +156,7 @@ allow dumpstate perfetto_traces_bugreport_data_file:file { r_file_perms unlink }
 # zip file. These rules are to allow perfetto.te to inherit dumpstate's
 # /dev/null.
 allow perfetto dumpstate_tmpfs:file rw_file_perms;
+allow perfetto dumpstate:memfd_file rw_no_ioctl_file_perms;
 allow perfetto dumpstate:fd use;
 
 # system_dlkm_file for /system_dlkm partition
@@ -163,6 +164,9 @@ allow dumpstate system_dlkm_file:dir getattr;
 
 # Allow dumpstate to execute derive_sdk in its own domain
 domain_auto_trans(dumpstate, derive_sdk_exec, derive_sdk)
+
+# Allow dumpstate to execute aflags in its own domain
+domain_auto_trans(dumpstate, aflags_exec, aflags)
 
 net_domain(dumpstate)
 binder_use(dumpstate)
@@ -389,9 +393,11 @@ allow dumpstate apex_system_server_data_file:dir search;
 allow dumpstate apex_uwb_data_file:dir r_dir_perms;
 allow dumpstate apex_uwb_data_file:file r_file_perms;
 
+# For wifi
+allow dumpstate apex_wifi_data_file:dir search;
+
 # Dumpstate calls screencap, which grabs a screenshot. Needs gpu access
-allow dumpstate gpu_device:chr_file rw_file_perms;
-allow dumpstate gpu_device:dir r_dir_perms;
+gpu_sphal_use(dumpstate)
 
 # logd access
 read_logd(dumpstate)
@@ -429,6 +435,7 @@ allow dumpstate self:netlink_tcpdiag_socket nlmsg_read;
 # For kernel >= 6.13
 allow dumpstate self:netlink_tcpdiag_socket nlmsg;
 allowxperm dumpstate self:netlink_tcpdiag_socket nlmsg SOCK_DIAG_BY_FAMILY;
+allowxperm dumpstate self:netlink_route_socket nlmsg { RTM_GETLINK RTM_GETNEIGH };
 
 # Access /data/tombstones.
 allow dumpstate tombstone_data_file:dir r_dir_perms;
@@ -477,11 +484,11 @@ allow dumpstate {
   -fwk_vold_service
   -default_android_service
 }:service_manager find;
-starting_at_board_api(202604, `
-    neverallow dumpstate {
-      vold
-    }:binder call;
-')
+
+neverallow dumpstate {
+  vold
+}:binder call;
+
 # suppress denials for services dumpstate should not be accessing.
 dontaudit dumpstate {
   apex_service
@@ -517,9 +524,6 @@ allow dumpstate proc_zoneinfo:file r_file_perms;
 # Create a service for talking back to system_server
 add_service(dumpstate, dumpstate_service)
 
-# use /dev/ion for screen capture
-allow dumpstate ion_device:chr_file r_file_perms;
-
 # Allow dumpstate to run top
 allow dumpstate proc_stat:file r_file_perms;
 
@@ -554,10 +558,12 @@ allow dumpstate linkerconfig_file:dir { read open };
 
 # For when dumpstate runs df
 dontaudit dumpstate {
+  apk_data_file
   mnt_vendor_file
   mirror_data_file
   mnt_user_file
   mnt_product_file
+  vendor_apex_file
 }:dir search;
 dontaudit dumpstate {
   apex_mnt_dir
@@ -580,11 +586,23 @@ binder_call(dumpstate, mediaswcodec);
 allow dumpstate snapshotctl_log_data_file:dir r_dir_perms;
 allow dumpstate snapshotctl_log_data_file:file r_file_perms;
 
-#Allow access to /dev/binderfs/binder_logs
+# Allow access to /dev/binderfs/binder_logs
 allow dumpstate binderfs_logs:dir r_dir_perms;
-allow dumpstate binderfs_logs:file r_file_perms;
-allow dumpstate binderfs_logs_proc:file r_file_perms;
+userdebug_or_eng(`
+  allow dumpstate {
+    binderfs_logs
+    binderfs_logs_proc
+    binderfs_logs_transactions
+  }:file r_file_perms;
+')
+dontaudit dumpstate {
+  binderfs_logs
+  binderfs_logs_proc
+  binderfs_logs_transactions
+}:file r_file_perms;
+allow dumpstate binderfs_logs_state_hashed:file r_file_perms;
 allow dumpstate binderfs_logs_stats:file r_file_perms;
+allow dumpstate binderfs_logs_transaction_history:file r_file_perms;
 
 use_apex_info(dumpstate)
 
@@ -594,6 +612,11 @@ allow dumpstate shutdown_checkpoints_system_data_file:file r_file_perms;
 
 # Allow dumpstate to make binder calls to wifi_mainline_supplicant
 binder_call(dumpstate, wifi_mainline_supplicant);
+
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+  # Allow dumpstate to call "dump" of aisealhostservice for bugreport generation
+  binder_call(dumpstate, aisealhostservice);
+') # is_flag_enabled(RELEASE_AISEAL_FRAMEWORK)
 
 ###
 ### neverallow rules

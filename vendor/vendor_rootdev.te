@@ -1,0 +1,12 @@
+type vendor_rootdev, domain;
+type vendor_rootdev_exec, vendor_file_type, exec_type, file_type;
+
+# Sysfs files needed by rootdev utility
+allow vendor_rootdev sysfs_devices_block:file r_file_perms;
+allow vendor_rootdev sysfs_devices_block:dir search;
+allow vendor_rootdev sysfs_dm:file r_file_perms;
+allow vendor_rootdev sysfs_dm:dir r_dir_perms;
+allow vendor_rootdev sysfs_loop:file r_file_perms;
+allow vendor_rootdev sysfs_loop:dir search;
+allow vendor_rootdev sysfs:file r_file_perms;
+allow vendor_rootdev sysfs:dir r_dir_perms;

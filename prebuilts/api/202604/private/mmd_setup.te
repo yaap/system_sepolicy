@@ -1,0 +1,61 @@
+# Define the domain for the mmd_setup service
+until_board_api(202604, `
+    # define also in private to simplify rules around this type
+    type mmd_setup, domain;
+    typeattribute mmd_setup coredomain;
+')
+type mmd_setup_exec, system_file_type, exec_type, file_type;
+type zram_data_file, file_type, data_file_type, core_data_file_type;
+
+# Allow init to transition to the mmd_setup domain
+init_daemon_domain(mmd_setup)
+
+# Read mmd settings properties
+get_prop(mmd_setup, mmd_prop)
+get_prop(mmd_setup, mmd_shared_prop)
+get_prop(mmd_setup, mmd_config_prop)
+get_prop(mmd_setup, device_config_mmd_native_prop)
+
+# Write mmd setup related properties
+set_prop(mmd_setup, mmd_shared_status_prop)
+set_prop(mmd_setup, mmd_status_prop)
+
+# Read /proc/swaps
+allow mmd_setup proc_swaps:file r_file_perms;
+
+# zram sysfs access
+allow mmd_setup sysfs_zram:dir search;
+allow mmd_setup sysfs_zram:file rw_file_perms;
+
+# mkswap /dev/block/zram command. The zram[0-9]* file itself
+# can be either swap_block_device or ram_device.
+allow mmd_setup block_device:dir search;
+allow mmd_setup { ram_device swap_block_device }:blk_file rw_file_perms;
+
+# Allow mmd_setup to write to statsd socket.
+unix_socket_send(mmd_setup, statsdw, statsd)
+
+# Allow mmd_setup to manage the zram writeback file in /data/per_boot/zram
+allow mmd_setup per_boot_file:dir search;
+allow mmd_setup zram_data_file:dir w_dir_perms;
+allow mmd_setup zram_data_file:file create_file_perms;
+
+# Allow mmd_setup to attach a loop device to the zram writeback file.
+allow mmd_setup loop_control_device:chr_file rw_file_perms;
+allow mmd_setup loop_device:blk_file rw_file_perms;
+allowxperm mmd_setup loop_device:blk_file ioctl LOOP_CONFIGURE;
+allow mmd_setup sysfs_loop:dir search;
+allow mmd_setup sysfs_loop:file rw_file_perms;
+allow mmd_setup sysfs_dm:dir r_dir_perms;
+
+# Read underlying block device queue depth to configure zram writeback.
+allow mmd_setup sysfs_devices_block:dir r_dir_perms;
+allow mmd_setup sysfs_devices_block:file r_file_perms;
+
+# Access to /sys/class/block and the files it contains so that mmd_setup
+# can resolve the physical block device that underlies /data/per_boot/zram
+# and then use its queue depth to configure the zram writeback device.
+allow mmd_setup sysfs_block:dir r_dir_perms;
+
+# swapon syscall
+allow mmd_setup self:capability sys_admin;

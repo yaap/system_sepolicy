@@ -19,6 +19,9 @@ r_dir_file(mediametrics, cgroup)
 r_dir_file(mediametrics, cgroup_v2)
 allow mediametrics proc_meminfo:file r_file_perms;
 
+# Allow mediametrics to determine whether callers have dump permission
+allow mediametrics activity_service:service_manager find;
+
 # allows interactions with dumpsys to GMScore
 allow mediametrics { app_data_file privapp_data_file }:file write;
 

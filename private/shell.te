@@ -123,6 +123,9 @@ set_prop(shell, pm_16kb_app_compat_prop)
 # Allow shell to set the system property for HSUM boot strategy.
 set_prop(shell, hsum_boot_strategy_prop)
 
+# Allow shell to set the casefolding override property
+set_prop(shell, casefolding_override_prop)
+
 # Allow shell to get encryption policy of /data/local/tmp/, for CTS
 allowxperm shell shell_data_file:dir ioctl {
   FS_IOC_GET_ENCRYPTION_POLICY
@@ -165,12 +168,15 @@ allow shell vendor_apex_metadata_file:dir r_dir_perms;
 # Allow shell to read updated APEXes under /data/apex
 allow shell apex_data_file:dir search;
 allow shell staging_data_file:file r_file_perms;
+# data APEXes are moved to device-mapped block files
+allow shell apex_dm_device:blk_file r_file_perms;
 
 # Set properties.
 set_prop(shell, shell_prop)
 set_prop(shell, ctl_bugreport_prop)
 set_prop(shell, ctl_dumpstate_prop)
 set_prop(shell, dumpstate_prop)
+set_prop(shell, dumpstate_last_id_prop)
 set_prop(shell, exported_dumpstate_prop)
 set_prop(shell, debug_prop)
 set_prop(shell, perf_drop_caches_prop)
@@ -249,6 +255,7 @@ allow shell shell_key:keystore2_key { delete rebind use get_info update };
 # As this is test-only functionality, limit the use to debuggable builds
 userdebug_or_eng(`
   allow shell appdomain_tmpfs:file open;
+  allow shell appdomain:memfd_file open;
 ')
 
 # Allow shell to write db.log.detailed, db.log.slow_query_threshold*
@@ -283,10 +290,9 @@ userdebug_or_eng(`set_prop(shell, persist_wm_debug_prop)')
 # Allow shell to write GWP-ASan properties even on user builds.
 set_prop(shell, gwp_asan_prop)
 
-# Allow shell to set persist.sysui.notification.builder_extras_override property
-userdebug_or_eng(`set_prop(shell, persist_sysui_builder_extras_prop)')
-# Allow shell to set persist.sysui.notification.ranking_update_ashmem property
-userdebug_or_eng(`set_prop(shell, persist_sysui_ranking_update_prop)')
+# Read/Write persist.pcc. properties
+set_prop(shell, pcc_audit_mode_prop)
+set_prop(shell, pcc_audit_mode_client_prop)
 
 # Allow shell to read the build properties for attestation feature
 get_prop(shell, build_attestation_prop)
@@ -294,6 +300,12 @@ get_prop(shell, build_attestation_prop)
 # Allow shell to execute oatdump.
 # TODO (b/350628688): Remove this once it's safe to do so.
 allow shell oatdump_exec:file rx_file_perms;
+
+# Allow shell to execute aflags.
+domain_auto_trans(shell, aflags_exec, aflags)
+
+# Allow shell to execute device_config
+allow shell device_config_exec:file rx_file_perms;
 
 # Create and use network sockets.
 net_domain(shell)
@@ -364,7 +376,7 @@ userdebug_or_eng(`
 
 # allow shell access to services
 allow shell servicemanager:service_manager list;
-# don't allow shell to access GateKeeper service
+# don't allow shell to access GateKeeper & other security HAL services.
 # TODO: why is this so broad? Tightening candidate? It needs at list:
 # - dumpstate_service (so it can receive dumpstate progress updates)
 allow shell {
@@ -372,12 +384,11 @@ allow shell {
   -apex_service
   -dnsresolver_service
   -gatekeeper_service
-starting_at_board_api(202604, `
   -hal_frp_service
-')
   -hal_keymint_service
   -hal_secureclock_service
   -hal_sharedsecret_service
+  -hal_secretkeeper_service
   -incident_service
   -installd_service
   -mdns_service
@@ -388,6 +399,7 @@ starting_at_board_api(202604, `
   -vold_service
   -default_android_service
   -virtualization_service
+  -virtualization_maintenance_service
 }:service_manager find;
 allow shell dumpstate:binder call;
 
@@ -399,8 +411,12 @@ allow shell hwservicemanager:hwservice_manager list;
 # allow shell to look through /proc/ for lsmod, ps, top, netstat, vmstat.
 r_dir_file(shell, proc_net_type)
 
+# allow shell to query the network links via netlink.
+allowxperm shell self:netlink_route_socket nlmsg RTM_GETLINK;
+
 allow shell {
   proc_asound
+  proc_consoles
   proc_cgroups
   proc_diskstats
   proc_filesystems
@@ -418,6 +434,9 @@ allow shell {
   proc_vmstat
   proc_zoneinfo
 }:file r_file_perms;
+
+# allow listing block devices under /sys/class/block.
+allow shell sysfs_block:dir r_dir_perms;
 
 # allow listing network interfaces under /sys/class/net.
 allow shell sysfs_net:dir r_dir_perms;
@@ -472,9 +491,6 @@ userdebug_or_eng(`
 # Allow CTS to check whether AVF debug policy is installed
 allow shell { proc_dt_avf sysfs_dt_avf }:dir search;
 
-# Allow access to ion memory allocation device.
-allow shell ion_device:chr_file rw_file_perms;
-
 #
 # filesystem test for insecure chr_file's is done
 # via a host side test
@@ -521,13 +537,13 @@ recovery_only(`
 # Do not allow shell to talk directly to security HAL services other than
 # hal_remotelyprovisionedcomponent_service
 neverallow shell {
-starting_at_board_api(202604, `
   hal_frp_service
-')
   hal_keymint_service
   hal_secureclock_service
   hal_sharedsecret_service
+  hal_secretkeeper_service
   virtualization_service
+  virtualization_maintenance_service
 }:service_manager find;
 
 # Do not allow shell to hard link to any files.
@@ -550,7 +566,7 @@ neverallow shell {
 }:chr_file ~getattr;
 
 # Limit shell to only getattr on blk devices for host side tests.
-neverallow shell dev_type:blk_file ~getattr;
+neverallow shell {dev_type -apex_dm_device}:blk_file ~getattr;
 
 # b/30861057: Shell access to existing input devices is an abuse
 # vector. The shell user can inject events that look like they
@@ -593,9 +609,9 @@ neverallow {
   -dumpstate
   -installd
   userdebug_or_eng(`-uncrypt')
-  userdebug_or_eng(`-virtualizationmanager')
+  userdebug_or_eng(`-virtualizationmanager_domain')
   userdebug_or_eng(`-virtualizationservice')
-  userdebug_or_eng(`-crosvm')
+  userdebug_or_eng(`-crosvm_domain')
 } shell_data_file:file open;
 
 # In addition to the symlink reading restrictions above, restrict
@@ -648,8 +664,8 @@ neverallow {
   -simpleperf_app_runner
   -system_server # why?
   userdebug_or_eng(`-uncrypt')
-  userdebug_or_eng(`-virtualizationmanager')
-  userdebug_or_eng(`-crosvm')
+  userdebug_or_eng(`-virtualizationmanager_domain')
+  userdebug_or_eng(`-crosvm_domain')
 } shell_data_file:dir search;
 
 # Restrict execute from /data/local/tmp directories. This directory contains
@@ -657,3 +673,6 @@ neverallow {
 # be able to execute such content. Allowing other domains to execute this
 # content would be a privilege escalation vulnerability.
 neverallow { domain -shell } shell_data_file:file no_x_file_perms;
+
+# Allow shell to set adbd connect timeout for UDS
+set_prop(shell, adb_timeout_prop)

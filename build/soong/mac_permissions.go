@@ -74,7 +74,7 @@ func getAllKeyPaths(ctx android.ModuleContext, dir android.SourcePath) android.P
 }
 
 func (m *macPermissionsModule) DepsMutator(ctx android.BottomUpMutatorContext) {
-	// do nothing
+	ctx.AddHostToolDependencies("insertkeys")
 }
 
 func (m *macPermissionsModule) stem() string {
@@ -100,6 +100,7 @@ func (m *macPermissionsModule) GenerateAndroidBuildActions(ctx android.ModuleCon
 
 	m4Keys := android.PathForModuleGen(ctx, "mac_perms_keys.tmp")
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 	rule.Command().
 		Tool(ctx.Config().PrebuiltBuildTool(ctx, "m4")).
 		Text("--fatal-warnings -s").
@@ -114,6 +115,7 @@ func (m *macPermissionsModule) GenerateAndroidBuildActions(ctx android.ModuleCon
 	rule.Command().Text("DEFAULT_SYSTEM_DEV_CERTIFICATE="+ctx.Config().DefaultAppCertificateDir(ctx).String()).
 		Text("MAINLINE_SEPOLICY_DEV_CERTIFICATES="+ctx.Config().MainlineSepolicyDevCertificatesDir(ctx).String()).
 		Text("MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES="+ctx.Config().MainlineBluetoothSepolicyDevCertificatesDir(ctx).String()).
+		Text("MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES="+ctx.Config().MainlineNfcSepolicyDevCertificatesDir(ctx).String()).
 		BuiltTool("insertkeys").
 		FlagWithArg("-t ", buildVariant(ctx)).
 		Input(m4Keys).

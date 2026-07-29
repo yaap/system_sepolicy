@@ -126,6 +126,8 @@ func (m *selinuxContextsModule) DepsMutator(ctx android.BottomUpMutatorContext) 
 			{Mutator: "image", Variation: android.CoreVariation},
 		}, reuseContextsDepTag, ctx.ModuleName())
 	}
+
+	ctx.AddHostToolDependencies("check_prop_prefix", "sysprop_type_checker", "checkseapp")
 }
 
 func (m *selinuxContextsModule) propertyContextsDeps(ctx android.BottomUpMutatorContext) {
@@ -280,6 +282,7 @@ func (m *selinuxContextsModule) buildGeneralContexts(ctx android.ModuleContext, 
 	builtContext := pathForModuleOut(ctx, ctx.ModuleName()+"_m4out")
 
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 
 	newlineFile := pathForModuleOut(ctx, "newline")
 
@@ -359,6 +362,7 @@ func (m *selinuxContextsModule) checkVendorPropertyNamespace(ctx android.ModuleC
 	ApiLevelR := android.ApiLevelOrPanic(ctx, "R")
 
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 
 	// This list is from vts_treble_sys_prop_test.
 	allowedPropertyPrefixes := []string{
@@ -437,6 +441,7 @@ func (m *selinuxContextsModule) buildPropertyContexts(ctx android.ModuleContext,
 	if len(apiFiles) > 0 {
 		out := pathForModuleOut(ctx, ctx.ModuleName()+"_api_checked")
 		rule := android.NewRuleBuilder(pctx, ctx)
+		rule.SandboxDisabled()
 
 		msg := `\n******************************\n` +
 			`API of sysprop_library doesn't match with property_contexts\n` +
@@ -476,6 +481,7 @@ func (m *selinuxContextsModule) buildSeappContexts(ctx android.ModuleContext, in
 	flags := m.getBuildFlags(ctx)
 	m4NeverallowFile := pathForModuleOut(ctx, "neverallow.m4out")
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 	rule.Command().
 		Tool(ctx.Config().PrebuiltBuildTool(ctx, "m4")).
 		Flag("--fatal-warnings").
@@ -644,6 +650,10 @@ func vndServiceContextsTestFactory() android.Module {
 	return m
 }
 
+func (m *contextsTestModule) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("checkfc", "property_info_checker")
+}
+
 func (m *contextsTestModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	tool := "checkfc"
 	if m.context == PropertyContext {
@@ -685,6 +695,7 @@ func (m *contextsTestModule) GenerateAndroidBuildActions(ctx android.ModuleConte
 
 	srcs := android.PathsForModuleSrc(ctx, m.properties.Srcs)
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 
 	if validateWithPolicy {
 		sepolicy := android.PathForModuleSrc(ctx, proptools.String(m.properties.Sepolicy))

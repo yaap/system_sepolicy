@@ -26,6 +26,10 @@ allow system_app misc_user_data_file:file create_file_perms;
 # files located in the assets/ directory.
 allow system_app apex_data_file:dir search;
 allow system_app staging_data_file:file r_file_perms;
+# Since data APEXes are moved to device-mapped block files (e.g. /dev/block/dm-1)
+# system_app now needs `search` to the parent dir(/dev/block) and `read` for the blk_file
+allow system_app block_device:dir search;
+allow system_app apex_dm_device:blk_file r_file_perms;
 
 # Read wallpaper file.
 allow system_app wallpaper_file:file r_file_perms;
@@ -76,6 +80,8 @@ get_prop(system_app, enable_16k_pages_prop)
 # Allow developer settings to check virtualization capabilities
 get_prop(system_app, hypervisor_prop)
 
+get_prop(system_app, dumpstate_last_id_prop)
+
 # Create /data/anr/traces.txt.
 allow system_app anr_data_file:dir ra_dir_perms;
 allow system_app anr_data_file:file create_file_perms;
@@ -115,6 +121,7 @@ allow system_app {
   -virtual_touchpad_service
   -vold_service
   -default_android_service
+  -virtualization_maintenance_service
 }:service_manager find;
 # suppress denials for services system_app should not be accessing.
 dontaudit system_app {

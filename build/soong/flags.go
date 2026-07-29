@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../../../build/blueprint/gobtools/codegen
+
 var (
 	flagsDepTag      = dependencyTag{name: "flags"}
 	buildFlagsDepTag = dependencyTag{name: "build_flags"}
@@ -46,6 +48,7 @@ type flagsModule struct {
 	properties flagsProperties
 }
 
+// @auto-generate: gob
 type flagsInfo struct {
 	Flags []string
 }
@@ -96,6 +99,7 @@ func (f *flagsModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	})
 }
 
+// @auto-generate: gob
 type buildFlagsInfo struct {
 	BuildFlags map[string]string
 }

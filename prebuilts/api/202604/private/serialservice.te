@@ -1,0 +1,37 @@
+until_board_api(202604, `
+    type serialservice, domain;
+')
+
+type serialservice_exec, system_file_type, exec_type, file_type;
+
+typeattribute serialservice coredomain;
+typeattribute serialservice mlstrustedobject;
+
+init_daemon_domain(serialservice)
+
+# Perform Binder IPC
+binder_use(serialservice)
+
+# Register the native service
+add_service(serialservice, native_serial_service)
+
+# Listen to /dev and /dev/pts (for CTS) changes
+allow serialservice { device devpts }:dir r_dir_perms;
+
+# Read /proc/tty/drivers
+allow serialservice proc_tty_drivers:file r_file_perms;
+
+# Read/write serial devices /dev/tty*.
+allow serialservice { serial_device usb_serial_device }:chr_file rw_file_perms;
+
+# Create and use PTY devices /dev/pts/* (for CTS).
+create_pty(serialservice)
+
+# The PTY created by serialservice should not be accessible by other domains.
+neverallow { domain -serialservice } serialservice_devpts:chr_file *;
+
+# Allow serialservice to read USB sysfs to read vid:pid information
+r_dir_file(serialservice, sysfs_usb)
+
+# stat(2) on uevent file under sysfs device folders
+allow serialservice sysfs:file getattr;

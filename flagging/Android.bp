@@ -17,6 +17,7 @@
 se_flags {
     name: "aosp_selinux_flags",
     flags: [
+        "RELEASE_AISEAL_FRAMEWORK",
         "RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES",
         "RELEASE_AVF_ENABLE_EARLY_VM",
         "RELEASE_AVF_ENABLE_DEVICE_ASSIGNMENT",

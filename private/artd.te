@@ -14,6 +14,10 @@ add_service(artd, artd_pre_reboot_service)
 allow artd dumpstate:fifo_file { getattr write };
 allow artd dumpstate:fd use;
 
+# Allow artd to query compos_service
+allow artd compos_service:service_manager find;
+binder_call(artd, composd)
+
 init_daemon_domain(artd)
 
 # Allow query ART device config properties
@@ -148,6 +152,7 @@ r_dir_file(artd, dex2oat);
 # artd needs to reopen a memfd with readonly in order to pass it to subprocesses
 # that don't have write permissions on memfds.
 allow artd artd_tmpfs:file open;
+allow artd artd:memfd_file open;
 
 # Allow artd and its subprocesses to redirect standard streams to system server.
 allow { artd artd_subprocess_type } system_server:fd use;

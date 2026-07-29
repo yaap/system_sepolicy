@@ -64,6 +64,12 @@ ver=$2 # the version that we're now finalizing
 # Step 1. Snapshots $ver files to system/sepolicy/prebuilts/api/$ver
 ################################################################################
 prebuilt_dir=$top/system/sepolicy/prebuilts/api/$ver
+
+if [ -d $prebuild_dir ]; then
+  echo "$prebuilt_dir exists already, so nothing to do"
+  exit 0
+fi
+
 mkdir -p "$prebuilt_dir"
 cp -r "$top/system/sepolicy/public/" "$prebuilt_dir"
 cp -r "$top/system/sepolicy/private/" "$prebuilt_dir"
@@ -232,7 +238,7 @@ prebuilt_etc {
 }
 EOF
 
-sed -i 's/^\("plat_sepolicy_genfs_'$ver'.cil",\)/\1"plat_sepolicy_genfs_'$next_ver'.cil",/g' \
+sed -i 's/\("plat_sepolicy_genfs_'$ver'.cil",\)/\1"plat_sepolicy_genfs_'$next_ver'.cil",/g' \
     $top/system/sepolicy/Android.bp
 
 

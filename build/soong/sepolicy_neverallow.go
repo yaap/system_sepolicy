@@ -106,6 +106,7 @@ func (n *neverallowTestModule) loadHook(ctx android.LoadHookContext) {
 func (n *neverallowTestModule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddDependency(n, checkpolicyTag, n.checkpolicyConfModuleName())
 	ctx.AddDependency(n, sepolicyAnalyzeTag, n.sepolicyAnalyzeConfModuleName())
+	ctx.AddHostToolDependencies("checkpolicy", "sepolicy-analyze")
 }
 
 func (n *neverallowTestModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -146,7 +147,7 @@ func (n *neverallowTestModule) GenerateAndroidBuildActions(ctx android.ModuleCon
 	checkpolicyConfPath := checkpolicyConfPaths[0]
 	sepolicyAnalyzeConfPath := sepolicyAnalyzeConfPaths[0]
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Step 1. Build a binary policy from the conf file including build test
 	binaryPolicy := pathForModuleOut(ctx, "policy")

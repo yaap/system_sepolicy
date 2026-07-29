@@ -102,6 +102,7 @@
 /dev/block/dm-123                                                 dm_device
 /dev/block/dm                                                     block_device
 /dev/block/dm-                                                    block_device
+/dev/block/mapper/foo.apex                                        apex_dm_device
 /dev/block/ublkb0                                                 ublk_block_device
 /dev/block/ublkb123                                               ublk_block_device
 /dev/block/ublkb                                                  block_device
@@ -159,7 +160,6 @@
 /dev/input/event0                                                 input_device
 /dev/iio:device0                                                  iio_device
 /dev/iio:device1                                                  iio_device
-/dev/ion                                                          ion_device
 /dev/keychord                                                     keychord_device
 /dev/loop-control                                                 loop_control_device
 /dev/modem                                                        radio_device
@@ -288,6 +288,7 @@
 /dev/video99                                                      video_device
 /dev/vndbinder                                                    vndbinder_device
 /dev/watchdog                                                     watchdog_device
+/dev/wrapfd                                                       wrapfd_device
 /dev/xt_qtaguid                                                   qtaguid_device
 /dev/zero                                                         zero_device
 /dev/__properties__                                               properties_device
@@ -310,6 +311,8 @@
 /system/lib/bootstrap/test                                        system_bootstrap_lib_file
 /system/lib64/bootstrap/test                                      system_bootstrap_lib_file
 /system/bin/mm_events                                             mm_events_exec
+/system/bin/aflags                                                aflags_exec
+/system/bin/device_config                                         device_config_exec
 /system/bin/atrace                                                atrace_exec
 /system/bin/auditctl                                              auditctl_exec
 /system/bin/bcc                                                   rs_exec
@@ -362,12 +365,12 @@
 /system/bin/netutils-wrapper-1.0                                  netutils_wrapper_exec
 /system/bin/vold                                                  vold_exec
 /system/bin/netd                                                  netd_exec
-/system/bin/wificond                                              wificond_exec
 /system/bin/audioserver                                           audioserver_exec
 /system/bin/mediadrmserver                                        mediadrmserver_exec
 /system/bin/mediaserver                                           mediaserver_exec
 /system/bin/mediaserver32                                         mediaserver_exec
 /system/bin/mediaserver64                                         mediaserver_exec
+/system/bin/mediacodeclist_generator                              mediacodeclist_generator_exec
 /system/bin/mediametrics                                          mediametrics_exec
 /system/bin/cameraserver                                          cameraserver_exec
 /system/bin/mediaextractor                                        mediaextractor_exec
@@ -404,7 +407,11 @@
 /system/bin/llkd                                                  llkd_exec
 /system/bin/lmkd                                                  lmkd_exec
 /system/bin/mmd                                                   mmd_exec
+/system/bin/mmd_setup                                             mmd_setup_exec
+/system/bin/pmgd                                                  pmgd_exec
+/system/bin/aoad                                                  aoad_exec
 /system/bin/usbd                                                  usbd_exec
+/system/bin/usbauthservice                                        usbauthservice_exec
 /system/bin/inputflinger                                          inputflinger_exec
 /system/bin/logd                                                  logd_exec
 /system/bin/lpdumpd                                               lpdumpd_exec
@@ -413,6 +420,7 @@
 /system/bin/misctrl                                               misctrl_exec
 /system/bin/mtectrl                                               mtectrl_exec
 /system/bin/kcmdlinectrl                                          kcmdlinectrl_exec
+/system/bin/kcmdlinemodprobe                                      kcmdlinemodprobe_exec
 /system/bin/traced                                                traced_exec
 /system/bin/traced_perf                                           traced_perf_exec
 /system/bin/traced_probes                                         traced_probes_exec
@@ -432,6 +440,7 @@
 /system/bin/idmap2                                                idmap_exec
 /system/bin/idmap2d                                               idmap_exec
 /system/bin/update_engine                                         update_engine_exec
+/system/bin/update_engine_nonetd                                  update_engine_exec
 /system/bin/update_engine_nostats                                 update_engine_exec
 /system/bin/profcollectd                                          profcollectd_exec
 /system/bin/profcollectctl                                        profcollectd_exec
@@ -441,6 +450,8 @@
 /system/bin/hw/android.frameworks.bufferhub@1.0-service           fwk_bufferhub_exec
 /system/bin/hw/android.system.suspend-service                     system_suspend_exec
 /system/bin/memcgv2_activation_depth.sh                           memcgv2_activation_depth_exec
+/system/bin/crash_dump32                                          crash_dump_exec
+/system/bin/crash_dump64                                          crash_dump_exec
 /system/etc/aconfig                                               system_aconfig_storage_file
 /system/etc/cgroups.json                                          cgroup_desc_file
 /system/etc/task_profiles/cgroups_0.json                          cgroup_desc_file
@@ -456,9 +467,8 @@
 /system/etc/seccomp_policy/crash_dump.x86.policy                  system_seccomp_policy_file
 /system/etc/security/cacerts                                      system_security_cacerts_file
 /system/etc/security/cacerts/123                                  system_security_cacerts_file
-/system/etc/selinux/ashmem_compat_memfd_context.txt               ashmem_compat_memfd_context_file
-/system/etc/selinux/mapping/30.0.cil                              sepolicy_file
-#/system/etc/selinux/mapping/30.compat.0.cil                      sepolicy_file
+/system/etc/selinux/mapping/31.0.cil                              sepolicy_file
+/system/etc/selinux/mapping/31.0.compat.cil                       sepolicy_file
 /system/etc/selinux/plat_mac_permissions.xml                      mac_perms_file
 /system/etc/selinux/plat_property_contexts                        property_contexts_file
 /system/etc/selinux/plat_tee_service_contexts                     tee_service_contexts_file
@@ -496,8 +506,10 @@
 /system/bin/android.automotive.evs.manager@1.99                   evsmanagerd_exec
 /system/bin/uprobestats                                           uprobestats_exec
 /system/bin/trace_redactor                                        trace_redactor_exec
+/system/bin/aisealhostservice                                     aisealhostservice_exec
 /system/bin/bert_collector                                        bert_collector_exec
 /system/bin/omapi                                                 omapi_exec
+/system/bin/casefolding_remover                                   casefolding_remover_exec
 
 /vendor                                                           vendor_file
 /vendor/does_not_exist                                            vendor_file
@@ -518,6 +530,7 @@
 /system/vendor/etc/cgroups.json                                   vendor_cgroup_desc_file
 /vendor/etc/task_profiles.json                                    vendor_task_profiles_file
 /system/vendor/etc/task_profiles.json                             vendor_task_profiles_file
+/vendor/etc/dma_heap.json                                         vendor_dma_heap_config_file
 
 /vendor/lib/egl                                                   same_process_hal_file
 /vendor/lib64/egl                                                 same_process_hal_file
@@ -792,6 +805,8 @@
 /system/system_ext/bin/hwservicemanager                           hwservicemanager_exec
 /system_ext/bin/hw/android.hidl.allocator@1.0-service             hal_allocator_default_exec
 /system/system_ext/bin/hw/android.hidl.allocator@1.0-service      hal_allocator_default_exec
+/system_ext/bin/wificond                                          wificond_exec
+/system/system_ext/bin/wificond                                   wificond_exec
 
 /system_ext/bin/rkp_cert_processor                                rkp_cert_processor_exec
 /system/system_ext/bin/rkp_cert_processor                         rkp_cert_processor_exec
@@ -820,6 +835,8 @@
 
 /system_ext/bin/serialservice                                     serialservice_exec
 /system/system_ext/bin/serialservice                              serialservice_exec
+
+/system/bin/hidservice                                            hidservice_exec
 
 /vendor_dlkm                                                      vendor_file
 /vendor_dlkm/does_not_exist                                       vendor_file
@@ -857,6 +874,7 @@
 /data/system/environ                                              environ_system_data_file
 /data/system/environ/test                                         environ_system_data_file
 /data/system/packages.list                                        packages_list_file
+/data/system/users/user.list                                      user_list_data_file
 /data/system/game_mode_intervention.list                          game_mode_intervention_list_file
 /data/unencrypted                                                 unencrypted_data_file
 /data/unencrypted/test                                            unencrypted_data_file
@@ -923,6 +941,7 @@
 /data/media/test                                                  media_rw_data_file
 /data/mediadrm                                                    media_data_file
 /data/mediadrm/test                                               media_data_file
+/data/media_temp                                                  media_userdir_file
 /data/nativetest                                                  nativetest_data_file
 /data/nativetest/test                                             nativetest_data_file
 /data/nativetest64                                                nativetest_data_file
@@ -954,6 +973,8 @@
 /data/storage_area                                                system_userdir_file
 /data/misc_ce/0/storage_area_keys                                 storage_area_key_file
 /data/userdata_exp.test                                           exp_partition_data_file
+/data/per_boot                                                    per_boot_file
+/data/per_boot/zram                                               zram_data_file
 
 /data/misc/adb                                                    adb_keys_file
 /data/misc/adb/test                                               adb_keys_file
@@ -979,8 +1000,8 @@
 /data/misc/apexdata/com.android.uwb/test                          apex_uwb_data_file
 /data/misc/apexdata/com.android.uwb/log                           apex_uwb_data_file
 /data/misc/apexdata/com.android.uwb/log/test                      apex_uwb_data_file
-/data/misc/apexdata/com.android.wifi                              apex_system_server_data_file
-/data/misc/apexdata/com.android.wifi/test                         apex_system_server_data_file
+/data/misc/apexdata/com.android.wifi                              apex_wifi_data_file
+/data/misc/apexdata/com.android.wifi/test                         apex_wifi_data_file
 /data/misc/apexrollback                                           apex_rollback_data_file
 /data/misc/apexrollback/test                                      apex_rollback_data_file
 /data/misc/apns                                                   radio_data_file
@@ -1113,6 +1134,8 @@
 /data/misc/update_engine_log/test                                 update_engine_log_data_file
 /data/misc/snapuserd_log                                          snapuserd_log_data_file
 /data/misc/snapuserd_log/test                                     snapuserd_log_data_file
+/data/system/aiseal                                               aiseal_data_file
+/data/system/aiseal/test                                          aiseal_data_file
 /data/system/dropbox                                              dropbox_data_file
 /data/system/dropbox/test                                         dropbox_data_file
 /data/system/heapdump                                             heapdump_data_file
@@ -1121,6 +1144,7 @@
 /data/misc/trace/test                                             method_trace_data_file
 /data/misc/wmtrace                                                wm_trace_data_file
 /data/misc/wmtrace/test                                           wm_trace_data_file
+/data/misc/pmgd                                                   pmgd_data_file
 /data/misc/profiles/cur/0                                         user_profile_root_file
 /data/misc/profiles/cur/9                                         user_profile_root_file
 /data/misc/profiles/cur/0/test                                    user_profile_data_file
@@ -1143,7 +1167,6 @@
 /data/misc_ce/0/checkin                                           checkin_data_file
 /data/misc_ce/99/checkin/test                                     checkin_data_file
 
-/data/vendor/gatekeeper/test                                      gatekeeper_vendor_data_file
 /data/system/users/0/fpdata                                       fingerprintd_data_file
 /data/system/users/99/fpdata/test                                 fingerprintd_data_file
 /data/vendor_de/0/fpdata                                          fingerprint_vendor_data_file
@@ -1154,7 +1177,8 @@
 /data/vendor_ce/99/facedata/test                                  face_vendor_data_file
 /data/vendor_de/0/irisdata                                        iris_vendor_data_file
 /data/vendor_de/99/irisdata/test                                  iris_vendor_data_file
-
+/data/vendor_ce/0/wifi                                            wifi_vendor_user_data_file
+/data/vendor_ce/99/wifi/test                                      wifi_vendor_user_data_file
 /data/bootchart                                                   bootchart_data_file
 /data/bootchart/test                                              bootchart_data_file
 
@@ -1178,10 +1202,10 @@
 /data/misc_de/99/apexdata/com.android.permission/test             apex_system_server_data_file
 /data/misc_ce/0/apexdata/com.android.permission                   apex_system_server_data_file
 /data/misc_ce/99/apexdata/com.android.permission/test             apex_system_server_data_file
-/data/misc_de/0/apexdata/com.android.wifi                         apex_system_server_data_file
-/data/misc_de/99/apexdata/com.android.wifi/test                   apex_system_server_data_file
-/data/misc_ce/0/apexdata/com.android.wifi                         apex_system_server_data_file
-/data/misc_ce/99/apexdata/com.android.wifi/test                   apex_system_server_data_file
+/data/misc_de/0/apexdata/com.android.wifi                         apex_wifi_data_file
+/data/misc_de/99/apexdata/com.android.wifi/test                   apex_wifi_data_file
+/data/misc_ce/0/apexdata/com.android.wifi                         apex_wifi_data_file
+/data/misc_ce/99/apexdata/com.android.wifi/test                   apex_wifi_data_file
 /data/misc_de/0/apexdata/com.android.uwb                          apex_system_server_data_file
 /data/misc_de/99/apexdata/com.android.uwb/test                    apex_system_server_data_file
 /data/misc_ce/0/apexdata/com.android.uwb                          apex_system_server_data_file
@@ -1235,10 +1259,14 @@
 /data/system_de/0/ringtones                                       ringtone_file
 /data/system_de/0/ringtones/test                                  ringtone_file
 
+/data/system_ce/0/audit_logs                                      pcc_auditlogs_data_file
+/data/system_ce/0/audit_logs/audit_log.0.bin                      pcc_auditlogs_data_file
+
 /data/system_ce/0/shortcut_service/bitmaps                        shortcut_manager_icons
 /data/system_ce/9/shortcut_service/bitmaps/test                   shortcut_manager_icons
 
 /data/system_ce/0/appsearch/appsearch_storage                     appsearch_data_file
+/data/system_ce/0/AiSeal/kek                                      aiseal_data_file
 
 /data/system/users/10/photo.png                                   icon_file
 

@@ -74,6 +74,9 @@ allow traced_probes update_engine_data_file:dir { getattr open read search };
 allow traced_probes update_engine_log_data_file:dir { getattr open read search };
 allow traced_probes { user_profile_root_file user_profile_data_file}:dir { getattr open read search };
 
+# Allow to read users.list file.
+allow traced_probes user_list_data_file:file r_file_perms;
+
 # Allow traced_probes to run atrace. atrace pokes at system services to enable
 # their userspace TRACE macros.
 domain_auto_trans(traced_probes, atrace_exec, atrace);
@@ -141,6 +144,12 @@ get_prop(traced_probes, debug_tracing_desktop_mode_visible_tasks_prop)
 # traced_relay service in the VMs based on the value.
 set_prop(traced_probes, avf_vm_traced_relay_enabled_prop)
 
+# Allow traced_probes to run aflags to query flags status.
+domain_auto_trans(traced_probes, aflags_exec, aflags)
+
+# Allow traced_probes to kill aflags on timeout or termination.
+allow traced_probes aflags:process sigkill;
+
 ###
 ### Neverallow rules
 ###
@@ -155,38 +164,6 @@ neverallow traced_probes dev_type:blk_file { read write };
 
 # ptrace any other app
 neverallow traced_probes domain:process ptrace;
-
-# Disallows access to /data files.
-neverallow traced_probes {
-  data_file_type
-  -apex_module_data_file
-  -apex_art_data_file
-  -apk_data_file
-  -dalvikcache_data_file
-  -system_data_file
-  -system_data_root_file
-  -media_userdir_file
-  -system_userdir_file
-  -vendor_userdir_file
-  -system_app_data_file
-  -backup_data_file
-  -bootstat_data_file
-  -update_engine_data_file
-  -update_engine_log_data_file
-  -user_profile_root_file
-  -user_profile_data_file
-  # TODO(b/72998741) Remove vendor_data_file exemption. Further restricted in a
-  # subsequent neverallow. Currently only getattr and search are allowed.
-  -vendor_data_file
-  with_native_coverage(`-method_trace_data_file')
-}:dir *;
-neverallow traced_probes system_data_file:dir ~{ getattr userdebug_or_eng(`open read') search };
-neverallow traced_probes {
-  data_file_type
-  -packages_list_file
-  with_native_coverage(`-method_trace_data_file')
-  -game_mode_intervention_list_file
-}:file *;
 
 # Only init is allowed to enter the traced_probes domain via exec()
 neverallow { domain -init } traced_probes:process transition;

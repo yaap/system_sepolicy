@@ -37,12 +37,13 @@ From the Tuna device `BoardConfig.mk`, `device/samsung/tuna/BoardConfig.mk`
     BOARD_VENDOR_SEPOLICY_DIRS += device/samsung/tuna/sepolicy
 
 Alongside vendor sepolicy dirs, OEMs can also amend the public and private
-policy of the product and system_ext partitions:
+policy of the product and system_ext partitions; or the odm partition:
 
     SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += device/acme/roadrunner-sepolicy/systemext/public
     SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/acme/roadrunner-sepolicy/systemext/private
     PRODUCT_PUBLIC_SEPOLICY_DIRS += device/acme/roadrunner-sepolicy/product/public
     PRODUCT_PRIVATE_SEPOLICY_DIRS += device/acme/roadrunner-sepolicy/product/private
+    BOARD_ODM_SEPOLICY_DIRS += device/acme/roadrunner-sepolicy/odm
 
 The old `BOARD_PLAT_PUBLIC_SEPOLICY_DIR` and `BOARD_PLAT_PRIVATE_SEPOLICY_DIR`
 variables have been deprecated in favour of `SYSTEM_EXT_*`.

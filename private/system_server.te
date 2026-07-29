@@ -24,6 +24,8 @@ type_transition system_server system_data_file:sock_file system_unsolzygote_sock
 
 allow system_server zygote_tmpfs:file { map read write };
 allow system_server appdomain_tmpfs:file { getattr map read write };
+allow system_server zygote:memfd_file { map read write };
+allow system_server appdomain:memfd_file { getattr map read write };
 
 # For Incremental Service to check if incfs is available
 allow system_server proc_filesystems:file r_file_perms;
@@ -102,9 +104,10 @@ allow system_server zygote:process sigchld;
 # May kill zygote (or its child processes) on crashes.
 allow system_server {
   app_zygote
+  native_app_zygote
   crash_dump
-  crosvm
-  virtualizationmanager
+  crosvm_domain
+  virtualizationmanager_domain
   webview_zygote
   zygote
 }:process { getpgid sigkill signull setsched };
@@ -143,6 +146,11 @@ allow system_server self:global_capability_class_set {
     sys_time
     sys_tty_config
 };
+
+# Allow system_server to use CAP_MAC_ADMIN for managing the safetsetid policy.
+#
+# Despite its name, CAP_MAC_ADMIN does not provide admin control of selinux.
+allow system_server self:global_capability2_class_set mac_admin;
 
 # Allow alarmtimers to be set
 allow system_server self:global_capability2_class_set wake_alarm;
@@ -204,7 +212,7 @@ allow system_server hal_camera:process { getsched setsched };
 allow system_server mediaserver:process { getsched setsched };
 allow system_server bootanim:process { getsched setsched };
 # Set scheduling info for VMs (b/375058190)
-allow system_server { virtualizationmanager crosvm }:process { getsched setsched };
+allow system_server { virtualizationmanager_domain crosvm_domain crosvm_vu_fs }:process { getsched setsched };
 
 # Set scheduling info for psi monitor thread.
 # TODO: delete this line b/131761776
@@ -245,9 +253,6 @@ no_debugfs_restriction(`
   allow system_server debugfs_wakeup_sources:file r_file_perms;
 ')
 
-# Read /sys/kernel/ion/*.
-allow system_server sysfs_ion:file r_file_perms;
-
 # Read /sys/kernel/dma_heap/*.
 allow system_server sysfs_dma_heap:file r_file_perms;
 
@@ -258,9 +263,26 @@ allow system_server sysfs_cma:file r_file_perms;
 allow system_server sysfs_dmabuf_stats:dir r_dir_perms;
 allow system_server sysfs_dmabuf_stats:file r_file_perms;
 
+# Allow reading DMA-BUF bpf stats from /sys/fs/bpf/dmabuf/
+allow system_server fs_bpf_dmabuf:dir search;
+allow system_server fs_bpf_dmabuf:file { getattr open read };
+
 # Allow ActivityManager to look at the list of DMA-BUF heaps from /dev/dma_heap
 # for dumpsys meminfo
 allow system_server dmabuf_heap_device:dir r_dir_perms;
+
+# Allow NpuManager to access /dev/wrapfd only on userdebug and eng builds. These
+# rules can be allowed on user builds once the wrapfd driver is ready to be used
+# in those environments.
+userdebug_or_eng(`
+  allow system_server wrapfd_device:chr_file r_file_perms;
+  allowxperm system_server wrapfd_device:chr_file ioctl WRAPFD_DEV_IOC_WRAP;
+')
+
+# Allow NpuManager to utilize wrapfds
+type_transition system_server system_server:anon_inode system_server_wrapfd "[wrapfd]";
+allow system_server system_server_wrapfd:anon_inode { create ioctl read write getattr map };
+allowxperm system_server system_server_wrapfd:anon_inode ioctl { dma_buf_ioctls wrapfd_ioctls };
 
 # Allow reading /proc/vmstat for the oom kill count
 allow system_server proc_vmstat:file r_file_perms;
@@ -291,9 +313,12 @@ allow system_server webview_zygote:unix_stream_socket { read write connectto set
 # Communicate over a socket created by app_zygote.
 allow system_server app_zygote:unix_stream_socket { read write connectto setopt };
 
+# Communicate over a socket created by native_app_zygote.
+allow system_server native_app_zygote:unix_stream_socket { read write connectto setopt };
+
 # Communicate with a virtual machine (b/396144272)
-allow system_server virtualizationmanager:fd use;
-allow system_server virtualizationmanager:vsock_socket { getopt read write };
+allow system_server priv_app_all_virtualizationmanager:fd use;
+allow system_server priv_app_all_virtualizationmanager:vsock_socket { getopt read write };
 
 # Perform Binder IPC.
 binder_use(system_server)
@@ -455,6 +480,8 @@ allow system_server audioserver:udp_socket rw_socket_perms;
 allow system_server mediaserver:tcp_socket rw_socket_perms;
 allow system_server mediaserver:udp_socket rw_socket_perms;
 
+allow system_server audioserver:memfd_file { getattr read write map };
+
 # Use sockets received over binder from various services.
 allow system_server mediadrmserver:tcp_socket rw_socket_perms;
 allow system_server mediadrmserver:udp_socket rw_socket_perms;
@@ -488,6 +515,7 @@ r_dir_file(system_server, sysfs_usb_pd)
 allow system_server sysfs_usb_pd:file r_file_perms;
 
 # Read/write to usb for port mapping and authorization
+# Also used by UsbDeviceManager for android_kernel_aoa_enabled switch
 r_dir_file(system_server, sysfs_usb)
 allow system_server sysfs_usb:file rw_file_perms;
 
@@ -510,15 +538,10 @@ allow system_server sysfs_uhid:file rw_file_perms;
 # TODO: Remove when HALs are forced into separate processes
 allow system_server sysfs_vibrator:file { write append };
 
-# TODO: added to match above sysfs rule. Remove me?
-allow system_server sysfs_usb:file w_file_perms;
-
 # Access devices.
 allow system_server device:dir r_dir_perms;
 allow system_server mdns_socket:sock_file rw_file_perms;
-allow system_server gpu_device:chr_file rw_file_perms;
-allow system_server gpu_device:dir r_dir_perms;
-allow system_server sysfs_gpu:file r_file_perms;
+gpu_sphal_use(system_server)
 allow system_server input_device:dir r_dir_perms;
 allow system_server input_device:chr_file rw_file_perms;
 allow system_server tty_device:chr_file rw_file_perms;
@@ -547,6 +570,7 @@ allow system_server ota_package_file:file create_file_perms;
 allow system_server system_data_file:dir create_dir_perms;
 allow system_server system_data_file:notdevfile_class_set create_file_perms;
 allow system_server packages_list_file:file create_file_perms;
+allow system_server user_list_data_file:file create_file_perms;
 allow system_server game_mode_intervention_list_file:file create_file_perms;
 allow system_server keychain_data_file:dir create_dir_perms;
 allow system_server keychain_data_file:file create_file_perms;
@@ -576,6 +600,9 @@ get_prop(system_server, input_device_config_prop)
 r_dir_file(system_server, vendor_app_file)
 r_dir_file(system_server, vendor_framework_file)
 r_dir_file(system_server, vendor_overlay_file)
+
+# Access /vendor/etc/dma_heap.json
+allow system_server vendor_dma_heap_config_file:file r_file_perms;
 
 # Manage /data/app-private.
 allow system_server apk_private_data_file:dir create_dir_perms;
@@ -653,6 +680,10 @@ allow system_server backup_data_file:file create_file_perms;
 # Manage /data/system_ce/ID/appsearch.
 allow system_server appsearch_data_file:dir create_dir_perms;
 allow system_server appsearch_data_file:file create_file_perms;
+
+# Manage /data/system_ce/ID/audit_logs.
+allow system_server pcc_auditlogs_data_file:dir create_dir_perms;
+allow system_server pcc_auditlogs_data_file:file create_file_perms;
 
 # Write to /data/system/dropbox
 allow system_server dropbox_data_file:dir create_dir_perms;
@@ -762,6 +793,9 @@ allow system_server wallpaper_file:file { rw_file_perms rename unlink };
 # Backup of wallpaper imagery uses temporary hard links to avoid data churn
 allow system_server { system_data_file wallpaper_file }:file link;
 
+# Allow system_server to set the label for the user.list file.
+allow system_server user_list_data_file:file relabelto;
+
 # ShortcutManager icons
 allow system_server system_data_file:dir relabelfrom;
 allow system_server shortcut_manager_icons:dir { create_dir_perms relabelto };
@@ -862,9 +896,9 @@ set_prop(system_server, device_config_memory_safety_native_prop)
 set_prop(system_server, device_config_remote_key_provisioning_native_prop)
 set_prop(system_server, device_config_tethering_u_or_later_native_prop)
 set_prop(system_server, device_config_mmd_native_prop)
+set_prop(system_server, device_config_memory_management_native_boot_prop)
 set_prop(system_server, smart_idle_maint_enabled_prop)
 set_prop(system_server, arm64_memtag_prop)
-set_prop(system_server, native_binder_stats_prop)
 
 # staged flag properties
 set_prop(system_server, next_boot_prop)
@@ -941,10 +975,9 @@ get_prop(system_server, hypervisor_prop)
 get_prop(system_server, persist_wm_debug_prop)
 set_prop(system_server, persist_wm_debug_prop)
 
-# Read persist.sysui.notification.builder_extras_override property
-get_prop(system_server, persist_sysui_builder_extras_prop)
-# Read persist.sysui.notification.ranking_update_ashmem property
-get_prop(system_server, persist_sysui_ranking_update_prop)
+# Read/Write persist.pcc. properties
+set_prop(system_server, pcc_audit_mode_prop)
+set_prop(system_server, pcc_audit_mode_client_prop)
 
 # Read ro.tuner.lazyhal
 get_prop(system_server, tuner_config_prop)
@@ -1090,6 +1123,7 @@ userdebug_or_eng(`
   allow system_server profcollectd_service:service_manager find;
 ')
 allow system_server wifi_mainline_supplicant_service:service_manager find;
+allow system_server uprobestats_service:service_manager find;
 
 add_service(system_server, batteryproperties_service)
 
@@ -1139,6 +1173,16 @@ allow system_server resume_on_reboot_key:keystore2_key {
 allow system_server locksettings_key:keystore2_key {
 	delete
 	get_info
+	rebind
+	update
+	use
+};
+
+# Allow KeychainSystemService to manage keychain keys.
+allow system_server keychain_key:keystore2_key {
+	delete
+	get_info
+	grant
 	rebind
 	update
 	use
@@ -1227,7 +1271,7 @@ allow system_server toolbox_exec:file rx_file_perms;
 allow system_server pbtombstone_exec:file rx_file_perms;
 
 # Allow system process to setup fs-verity
-allowxperm system_server { apk_data_file apk_tmp_file system_data_file apex_system_server_data_file }:file ioctl FS_IOC_ENABLE_VERITY;
+allowxperm system_server { apk_data_file apk_tmp_file system_data_file apex_system_server_data_file apex_wifi_data_file}:file ioctl FS_IOC_ENABLE_VERITY;
 
 # Allow system process to measure fs-verity for apps, including those being installed
 allowxperm system_server { apk_data_file apk_tmp_file }:file ioctl FS_IOC_MEASURE_VERITY;
@@ -1250,7 +1294,6 @@ allow system_server preloads_media_file:dir { r_dir_perms write remove_name rmdi
 
 r_dir_file(system_server, cgroup)
 r_dir_file(system_server, cgroup_v2)
-allow system_server ion_device:chr_file r_file_perms;
 
 # Access to /dev/dma_heap/system
 allow system_server dmabuf_system_heap_device:chr_file r_file_perms;
@@ -1267,6 +1310,7 @@ allow system_server {
   proc_meminfo
   proc_pagetypeinfo
   proc_pipe_conf
+  proc_slabinfo
   proc_stat
   proc_uid_cputime_showstat
   proc_uid_io_stats
@@ -1359,10 +1403,18 @@ get_prop(system_server,system_jvmti_agent_prop)
 
 # UsbDeviceManager uses /dev/usb-ffs
 allow system_server functionfs:dir search;
-# UsbDeviceManager needs relabelfrom to change from functionfs to usbaccessory
-allow system_server functionfs:file { rw_file_perms relabelfrom };
-allow system_server usbaccessory_device:file relabelto;
-allow usbaccessory_device functionfs:filesystem associate;
+allow system_server functionfs:file rw_file_perms;
+allow system_server usbaccessory_device:file rw_file_perms;
+
+# Allow system_server to find the aoad binder service
+allow system_server aoad_service:service_manager find;
+
+# Allow system_server to call aoad via binder
+binder_call(system_server, aoad)
+
+# Allow system_server to read/write the socket owned by 'aoad'.
+allow system_server aoad:unix_stream_socket { read write getattr getopt setattr lock append shutdown };
+
 # To resolve arbitrary sysfs paths from /sys/class/udc/* symlinks.
 allow system_server sysfs_type:dir search;
 r_dir_file(system_server, sysfs_udc)
@@ -1455,6 +1507,8 @@ neverallow {
   -zygote
   -app_zygote
   -webview_zygote
+  -zygote_next
+  -native_app_zygote
 } system_unsolzygote_socket:sock_file { open write };
 
 # Only allow init, system_server, flags_health_check to set properties for server configurable flags
@@ -1485,6 +1539,7 @@ neverallow {
   device_config_window_manager_native_boot_prop
   device_config_tethering_u_or_later_native_prop
   device_config_mmd_native_prop
+  device_config_memory_management_native_boot_prop
   next_boot_prop
 }:property_service set;
 
@@ -1512,7 +1567,7 @@ neverallow system_server data_file_type:file no_x_file_perms;
 # The system_server may need to read from vd_device and dm_device if it uses
 # apexes mapped as block devices.
 neverallow system_server { dev_type -frp_block_device }:blk_file no_w_file_perms;
-neverallow system_server { dev_type -frp_block_device -vd_device -dm_device }:blk_file r_file_perms;
+neverallow system_server { dev_type -frp_block_device -vd_device -apex_dm_device }:blk_file r_file_perms;
 
 # system_server should never use JIT functionality
 # See https://googleprojectzero.blogspot.com/2016/12/bitunmap-attacking-android-ashmem.html
@@ -1527,10 +1582,12 @@ neverallow system_server { ashmem_device ashmem_libcutils_device }:chr_file exec
 
 # TODO: deal with tmpfs_domain pub/priv split properly
 neverallow system_server system_server_tmpfs:file execute;
+neverallow system_server system_server:memfd_file execute;
 
 # Resources handed off by system_server_startup
 allow system_server system_server_startup:fd use;
 allow system_server system_server_startup_tmpfs:file { read write map };
+allow system_server system_server_startup:memfd_file { read write map };
 allow system_server system_server_startup:unix_dgram_socket write;
 
 # Allow system server to communicate to apexd
@@ -1544,7 +1601,8 @@ allow system_server apex_mnt_dir:dir r_dir_perms;
 allow system_server apex_info_file:file r_file_perms;
 
 # Allow system_server read APEX file mapped as device-mapper device
-allow system_server dm_device:blk_file r_file_perms;
+allow system_server apex_dm_device:blk_file r_file_perms;
+
 # and read the device mapper name from sysfs
 allow system_server sysfs_dm:file r_file_perms;
 
@@ -1582,18 +1640,18 @@ allow system_server apex_tethering_data_file:dir create_dir_perms;
 allow system_server apex_tethering_data_file:file create_file_perms;
 allow system_server apex_uwb_data_file:dir create_dir_perms;
 allow system_server apex_uwb_data_file:file create_file_perms;
+allow system_server apex_wifi_data_file:dir create_dir_perms;
+allow system_server apex_wifi_data_file:file create_file_perms;
 # Legacy labels that we still need to support (b/217581286)
 allow system_server {
   apex_appsearch_data_file
   apex_permission_data_file
   apex_scheduling_data_file
-  apex_wifi_data_file
 }:dir create_dir_perms;
 allow system_server {
   apex_appsearch_data_file
   apex_permission_data_file
   apex_scheduling_data_file
-  apex_wifi_data_file
 }:file create_file_perms;
 
 # Broadcast AppSearch memory
@@ -1658,6 +1716,10 @@ allow system_server proc_pressure_mem:file rw_file_perms;
 allow system_server { proc_pressure_cpu proc_pressure_io }:file r_file_perms;
 # Read /proc/diskstats to help debug IO stalls.
 allow system_server proc_diskstats:file r_file_perms;
+
+# Read/Write /sys/kernel/security/safesetid/uid_allowlist_policy
+allow system_server securityfs:dir search;
+allow system_server uid_allowlist_policy:file rw_file_perms;
 
 # CAP_SYS_RESOURCE was traditionally needed for sensitive /proc/PID
 # file read access. However, that is now unnecessary (b/34951864)
@@ -1767,6 +1829,7 @@ allow system_server pre_reboot_dexopt_file:dir { getattr search };
 # system_server needs to copy the new service-art.jar to a memfd and reopen it with the path
 # /proc/self/fd/<fd> with a classloader.
 allow system_server system_server_tmpfs:file open;
+allow system_server system_server:memfd_file open;
 
 # Allow system_server to read from postinstall scripts through STDIN, to check if the
 # otapreopt_script is still alive.
@@ -1782,11 +1845,26 @@ allow system_server {
   profman
 }:process sigkill;
 
+allow system_server hid_service:service_manager find;
+binder_call(system_server, hidservice)
+
 # Allow system_server to talk to native serial service to read metadata of and open serial ports.
-starting_at_board_api(202602, `
-    allow system_server native_serial_service:service_manager find;
-    binder_call(system_server, serialservice)
+allow system_server native_serial_service:service_manager find;
+binder_call(system_server, serialservice)
+
+allow system_server usb_auth_service:service_manager find;
+binder_call(system_server, usbauthservice)
+
+# Allow system_server to access AiSeal VM
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+    aiseal_use(system_server)
+
+    # Allow system server to AiSeal internal service to notify of user add/lock/unlock/remove events
+    allow system_server aiseal_internal_service:service_manager find;
 ')
+
+# Allow system_server to talk to NPU scheduling service
+hal_client_domain(system_server, hal_npu_scheduling)
 
 # Allow system server to read and write serial devices
 allow system_server { serial_device usb_serial_device }:chr_file { read write };
@@ -1821,3 +1899,25 @@ neverallow system_server self:global_capability_class_set sys_module;
 neverallow { domain -system_server -init } appsearch_data_file:file { open read write };
 
 neverallow system_server *:process ptrace;
+
+# Allow system_server to read the userspace AOA enabled property.
+get_prop(system_server, usb_userspace_aoa_enabled_prop)
+
+# Allow system_server to read the remote_provisioning.*.rkp_only property;
+get_prop(system_server,remote_prov_prop)
+
+# Allow system_server to read the zygote.zygote_next.server_ready property.
+get_prop(system_server, zygote_zygote_next_server_status_prop)
+# Allow system_server to read/write the persist.zygote.zygote_next.start_on_boot property.
+set_prop(system_server, zygote_zygote_next_boot_config_prop)
+
+# Read /proc/swaps for debugging and meminfo-related utilities.
+allow system_server proc_swaps:file { read open getattr };
+
+# Allow system_server to write the thermal profile property.
+set_prop(system_server, thermal_profile_prop)
+
+# Ensure system_server can only use the defined set of ioctl commands on the
+# wrapfd device node and the wrapfds.
+neverallowxperm system_server wrapfd_device:chr_file ioctl ~{ WRAPFD_DEV_IOC_WRAP };
+neverallowxperm system_server system_server_wrapfd:anon_inode ioctl ~{ dma_buf_ioctls wrapfd_ioctls };

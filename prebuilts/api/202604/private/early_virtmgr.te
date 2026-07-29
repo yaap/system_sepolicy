@@ -1,0 +1,90 @@
+until_board_api(202604, `
+type early_virtmgr_vendor, domain, coredomain, early_virtmgr_domain;
+typeattribute early_virtmgr early_virtmgr_domain;
+')
+
+# When early_virtmgr execs a file with the crosvm_exec label, run it in the crosvm domain.
+# This is only for `early_virtmgr_vendor` because the private `$_early_virtmgr` domains
+# are handled by the `early_virtmgr_use` macro.
+domain_auto_trans(early_virtmgr_vendor, crosvm_exec, crosvm_vendor)
+
+# Ensure that coredomain may not transition to early_virtmgr_vendor.
+neverallow coredomain early_virtmgr_vendor:process transition;
+# Ensure that non-coredomain may not transition to non-vendor early_virtmgr.
+neverallow { domain -coredomain } { early_virtmgr_domain -early_virtmgr_vendor }:process transition;
+
+use_bootstrap_libs(early_virtmgr_domain)
+
+# Let early_virtmgr_domain create files and directories inside /mnt/vm/early.
+allow early_virtmgr_domain vm_data_file:dir create_dir_perms;
+allow early_virtmgr_domain vm_data_file:file create_file_perms;
+allow early_virtmgr_domain vm_data_file:sock_file create_file_perms;
+
+# Allow early_virtmgr_domain to communicate use, read and write over the adb connection.
+allow early_virtmgr_domain adbd:fd use;
+allow early_virtmgr_domain adbd:unix_stream_socket { getattr read write };
+
+# Allow writing VM logs to the shell console
+allow early_virtmgr_domain devpts:chr_file { read write getattr ioctl };
+
+# Let the early_virtmgr_domain domain use Binder.
+binder_use(early_virtmgr_domain)
+
+# Let early_virtmgr_domain kill crosvm.
+allow early_virtmgr_domain crosvm_domain:process sigkill;
+
+# Allow early_virtmgr_domain to read apex-info-list.xml and access the APEX files listed there.
+allow early_virtmgr_domain apex_info_file:file r_file_perms;
+allow early_virtmgr_domain apex_data_file:dir search;
+
+# Ignore harmless denials on /proc/self/fd
+dontaudit early_virtmgr_domain self:dir write;
+
+# Let early_virtmgr_domain to accept vsock connection from the guest VMs
+allow early_virtmgr_domain self:vsock_socket { create_socket_perms_no_ioctl listen accept };
+
+# Allow early_virtmgr_domain to inspect all hypervisor capabilities.
+get_prop(early_virtmgr_domain, hypervisor_prop)
+get_prop(early_virtmgr_domain, hypervisor_pvmfw_prop)
+get_prop(early_virtmgr_domain, hypervisor_restricted_prop)
+get_prop(early_virtmgr_domain, hypervisor_virtualizationmanager_prop)
+
+# Allow early_virtmgr_domain to read file system DT for VM reference DT and AVF debug policy
+r_dir_file(early_virtmgr_domain, proc_dt_avf)
+r_dir_file(early_virtmgr_domain, sysfs_dt_avf)
+
+# early_virtmgr to be client of secretkeeper HAL. It ferries SecretManagement messages from pVM
+# to HAL.
+
+# Allow reading files under /proc/[crosvm pid]/, for collecting CPU & memory usage inside VM.
+r_dir_file(early_virtmgr_domain, crosvm_domain);
+
+# Allow early_virtmgr_domain to:
+# 1) bind to a vsock port less than 1024, because early VMs use static CIDs less than 1024
+# 2) call RLIMIT_MEMLOCK for itself
+allow early_virtmgr_domain self:global_capability_class_set { net_bind_service ipc_lock sys_resource };
+
+# early_virtmgr_domain may print messages to kmsg_debug_device.
+allow early_virtmgr_domain kmsg_debug_device:chr_file w_file_perms;
+
+# Allow early_virtmgr_domain to read vm related files in vendor partition
+allow early_virtmgr_domain vendor_vm_file:file { read getattr };
+allow early_virtmgr_domain vendor_vm_data_file:file { read write getattr };
+
+# early_virtmgr_domain reads tee_service_contexts_file to determine if VM is allowed
+# to access requested tee services
+allow early_virtmgr_domain tee_service_contexts_file:file r_file_perms;
+# early_virtmgr_domain uses libselinux to check if VM is allowed to access requested
+# tee services.
+selinux_check_access(early_virtmgr_domain)
+
+###
+### Neverallow rules
+###
+
+# Only crosvm and early_virtmgr_domain can access vm_data_file
+neverallow { domain -crosvm_domain -early_virtmgr_domain -init } vm_data_file:dir no_w_dir_perms;
+neverallow { domain -crosvm_domain -early_virtmgr_domain } vm_data_file:file no_rw_file_perms;
+
+# No other domains can accept vsock connection from the guest VMs
+neverallow { domain -early_virtmgr_domain } early_virtmgr_domain:vsock_socket { accept bind create connect listen };

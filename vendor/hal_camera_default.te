@@ -14,10 +14,11 @@ get_prop(hal_camera_default, device_config_camera_native_prop);
 # Allow reading graphics properties, specifically for EGL blobcache mode
 get_prop(hal_camera_default, graphics_config_prop);
 get_prop(hal_camera_default, graphics_config_writable_prop);
+# Allow reading camerax_extensions_prop.
+get_prop(hal_camera_default, camerax_extensions_prop);
 
 # For collecting bugreports.
 allow hal_camera_default dumpstate:fd use;
 allow hal_camera_default dumpstate:fifo_file write;
 
-allow hal_camera_default gpu_device:chr_file rw_file_perms;
-allow hal_camera_default gpu_device:dir r_dir_perms;
+gpu_sphal_use(hal_camera_default)

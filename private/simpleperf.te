@@ -9,9 +9,10 @@ type simpleperf_exec, system_file_type, exec_type, file_type;
 define(`simpleperf_profileable_apps', `{
   ephemeral_app
   isolated_app
-  platform_app
-  priv_app
+  platform_app_all
+  priv_app_all
   untrusted_app_all
+  pcc_component
 }')
 
 domain_auto_trans(simpleperf_profileable_apps, simpleperf_exec, simpleperf)

@@ -2,6 +2,9 @@
 
 init_daemon_domain(virtual_camera)
 
+# Allow virtual camera service to adjust its priority similar to a camera HAL.
+allow virtual_camera self:global_capability_class_set sys_nice;
+
 # Since virtual_camera is not a real HAL we don't set the
 # hal_server_domain(virtual_camera, hal_camera) macro but only the rules that
 # we actually need from halserverdomain and hal_camera_server:
@@ -34,12 +37,9 @@ add_service(virtual_camera, virtual_camera_service);
 hal_client_domain(virtual_camera, hal_graphics_allocator)
 
 # Allow virtual_camera to use GPU
-allow virtual_camera gpu_device:chr_file rw_file_perms;
-allow virtual_camera gpu_device:dir r_dir_perms;
-r_dir_file(virtual_camera, sysfs_gpu)
+gpu_sphal_use(virtual_camera)
 
-# ION And DMABUF are used by vendor to allocate graphic buffers needed by virtual_camera
-allow cameraserver ion_device:chr_file rw_file_perms;
+# DMABUF is used by vendor to allocate graphic buffers needed by virtual_camera
 allow cameraserver dmabuf_system_heap_device:chr_file r_file_perms;
 
 # Allow virtual camera to use graphics composer fd-s (fences).
@@ -59,3 +59,9 @@ allow virtual_camera shell:fifo_file { getattr read write };
 
 # Allow virtual_camera to access dmabuf_system_heap_device
 allow virtual_camera dmabuf_system_heap_device:chr_file { read open };
+
+# Mali GPU driver attempts to access various paths when looking for configuration.
+# These accesses are expected to fail and the denials should be ignored.
+# See envp_read_in_default_environment in vendor/arm/mali/valhall/env/src/mali_env.c
+dontaudit virtual_camera system_data_file:dir { search };
+dontaudit virtual_camera system_userdir_file:dir { search };

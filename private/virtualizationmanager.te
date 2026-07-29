@@ -1,50 +1,64 @@
-# Allow virtualizationmanager to communicate use, read and write over the adb connection.
-allow virtualizationmanager adbd:fd use;
-allow virtualizationmanager adbd:unix_stream_socket { getattr read write };
+# When virtualizationmanager execs a file with the crosvm_exec label, run it in the crosvm domain.
+# This is only for `virtualizationmanager_vendor` because the private `$_virtualizationmanager` domains
+# are handled by the `virtualizationservice_use` macro.
+domain_auto_trans(virtualizationmanager_vendor, crosvm_exec, crosvm_vendor)
+
+# Ensure that coredomain may not transition to virtualizationmanager_vendor.
+neverallow coredomain virtualizationmanager_vendor:process transition;
+# Ensure that non-coredomain may not transition to non-vendor virtualizationmanager.
+neverallow { domain -coredomain } { virtualizationmanager_domain -virtualizationmanager_vendor }:process transition;
+
+# Allow virtualizationmanager_domain to communicate use, read and write over the adb connection.
+allow virtualizationmanager_domain adbd:fd use;
+allow virtualizationmanager_domain adbd:unix_stream_socket { getattr read write };
 
 # Allow writing VM logs to the shell console
-allow virtualizationmanager devpts:chr_file { read write getattr ioctl };
+allow virtualizationmanager_domain devpts:chr_file { read write getattr ioctl };
 
-# Let the virtualizationmanager domain use Binder.
-binder_use(virtualizationmanager)
+# Let the virtualizationmanager_domain domain use Binder.
+binder_use(virtualizationmanager_domain)
 
-# Let virtualizationmanager find and communicate with virtualizationservice.
-allow virtualizationmanager virtualization_service:service_manager find;
-binder_call(virtualizationmanager, virtualizationservice)
-# Let virtualizationmanager find dropbox_service.
-allow virtualizationmanager dropbox_service:service_manager find;
-# Let virtualizationmanager to read /proc/version.
-allow virtualizationmanager proc_version:file r_file_perms;
+# Let virtualizationmanager_domain find and communicate with virtualizationservice.
+allow virtualizationmanager_domain virtualization_service:service_manager find;
+binder_call(virtualizationmanager_domain,  virtualizationservice)
+# Let virtualizationmanager_domain find dropbox_service.
+allow virtualizationmanager_domain dropbox_service:service_manager find;
+# Let virtualizationmanager_domain to read /proc/version.
+allow virtualizationmanager_domain proc_version:file r_file_perms;
 
-# Let virtualizationmanager find host services to proxy for payload clients
+# Let virtualizationmanager_domain find host services to proxy for payload clients
 # All calls between the host and payload clients are forwarded through
 # virtualizationmanager.
 # If this list becomes too large, we may want to split virtualizationmanager
 # into multiple domains.
-allow virtualizationmanager fwk_stats_service:service_manager find;
-binder_call(virtualizationmanager, stats_service_server);
+allow virtualizationmanager_domain fwk_stats_service:service_manager find;
+binder_call(virtualizationmanager_domain, stats_service_server);
 
 # Allow calling into the system server to find native services. "permission_service" to check
 # permissions, and "package_native" for staged apex info.
-binder_call(virtualizationmanager, system_server)
-allow virtualizationmanager { package_native_service permission_service }:service_manager find;
+binder_call(virtualizationmanager_domain,  system_server)
+allow virtualizationmanager_domain { package_native_service permission_service }:service_manager find;
 
-# When virtualizationmanager execs a file with the crosvm_exec label, run it in the crosvm domain.
-domain_auto_trans(virtualizationmanager, crosvm_exec, crosvm)
+# Allow transitioning to a crosvm_vu_* domain for vhost-user processes. The crosvm_vu_* domains are
+# meant to have less permissions than main crosvm for better privilege isolation.
+domain_auto_trans(virtualizationmanager_domain,  crosvm_vu_fs_exec, crosvm_vu_fs)
+domain_auto_trans(virtualizationmanager_domain,  crosvm_vu_snd_exec, crosvm_vu_snd)
 
-# Let virtualizationmanager kill crosvm.
-allow virtualizationmanager crosvm:process sigkill;
+# Let virtualizationmanager_domain kill crosvm.
+allow virtualizationmanager_domain crosvm_domain:process sigkill;
+allow virtualizationmanager_domain crosvm_vu_fs:process sigkill;
 
-# Let virtualizationmanager create files inside virtualizationservice's temporary directories.
-allow virtualizationmanager virtualizationservice_data_file:dir rw_dir_perms;
-allow virtualizationmanager virtualizationservice_data_file:{ file sock_file } create_file_perms;
+# Let virtualizationmanager_domain create files inside virtualizationservice's temporary directories.
+allow virtualizationmanager_domain virtualizationservice_data_file:dir rw_dir_perms;
+allow virtualizationmanager_domain virtualizationservice_data_file:{ file sock_file } create_file_perms;
 
-# Let virtualizationmanager read and write files from its various clients, but not open them
+# Let virtualizationmanager_domain read and write files from its various clients, but not open them
 # directly as they must be passed over Binder by the client.
-allow virtualizationmanager apk_data_file:file { getattr read };
+allow virtualizationmanager_domain apk_data_file:file { getattr read };
 
 # Write access is needed for mutable partitions like instance.img
-allow virtualizationmanager {
+allow virtualizationmanager_domain {
+  aiseal_data_file
   app_data_file
   apex_compos_data_file
   apex_virt_data_file
@@ -53,91 +67,93 @@ allow virtualizationmanager {
 
 # TODO(b/407079334): standardize
 # allow to read appsearch VM state
-get_prop(virtualizationmanager, appsearch_vm_prop)
+get_prop(virtualizationmanager_domain,  appsearch_vm_prop)
 
 # shell_data_file is used for automated tests and manual debugging.
-allow virtualizationmanager shell_data_file:file { getattr read write };
+allow virtualizationmanager_domain shell_data_file:file { getattr read write };
 
-# Allow virtualizationmanager to read apex-info-list.xml and access the APEX files listed there.
-allow virtualizationmanager apex_info_file:file r_file_perms;
-allow virtualizationmanager apex_data_file:dir search;
-allow virtualizationmanager staging_data_file:file r_file_perms;
-allow virtualizationmanager staging_data_file:dir search;
+# Allow virtualizationmanager_domain to read apex-info-list.xml and access the APEX files listed there.
+allow virtualizationmanager_domain apex_info_file:file r_file_perms;
+allow virtualizationmanager_domain apex_data_file:dir search;
+allow virtualizationmanager_domain staging_data_file:file r_file_perms;
+allow virtualizationmanager_domain staging_data_file:dir search;
+# data APEXes are moved to device-mapped block files
+allow virtualizationmanager_domain apex_dm_device:blk_file r_file_perms;
+allow virtualizationmanager_domain block_device:dir r_dir_perms;
 
 # Run derive_classpath in our domain
-allow virtualizationmanager derive_classpath_exec:file rx_file_perms;
-allow virtualizationmanager apex_mnt_dir:dir r_dir_perms;
+allow virtualizationmanager_domain derive_classpath_exec:file rx_file_perms;
+allow virtualizationmanager_domain apex_mnt_dir:dir r_dir_perms;
 # Ignore harmless denials on /proc/self/fd
-dontaudit virtualizationmanager self:dir write;
+dontaudit virtualizationmanager_domain self:dir write;
 
-# Let virtualizationmanager access /proc/pressure/memory for PSI monitors
-allow virtualizationmanager proc_pressure_mem:file rw_file_perms;
+# Let virtualizationmanager_domain access /proc/pressure/memory for PSI monitors
+allow virtualizationmanager_domain proc_pressure_mem:file rw_file_perms;
 
-# Let virtualizationmanager to accept vsock connection from the guest VMs
-allow virtualizationmanager self:vsock_socket { create_socket_perms_no_ioctl listen accept };
-neverallow { domain -virtualizationmanager } virtualizationmanager:vsock_socket { accept bind create connect listen };
+# Let virtualizationmanager_domain to accept vsock connection from the guest VMs
+allow virtualizationmanager_domain self:vsock_socket { create_socket_perms_no_ioctl listen accept };
+neverallow { domain -virtualizationmanager_domain } virtualizationmanager_domain: vsock_socket { accept bind create connect listen };
 
-# Allow virtualizationmanager to inspect all hypervisor capabilities.
-get_prop(virtualizationmanager, hypervisor_prop)
-get_prop(virtualizationmanager, hypervisor_restricted_prop)
+# Allow virtualizationmanager_domain to inspect all hypervisor capabilities.
+get_prop(virtualizationmanager_domain,  hypervisor_prop)
+get_prop(virtualizationmanager_domain,  hypervisor_restricted_prop)
 
-# Allow virtualizationmanager to be read custom pvmfw.img configuration
-userdebug_or_eng(`get_prop(virtualizationmanager, hypervisor_pvmfw_prop)')
-dontaudit virtualizationmanager hypervisor_pvmfw_prop:file read;
+# Allow virtualizationmanager_domain to be read custom pvmfw.img configuration
+userdebug_or_eng(`get_prop(virtualizationmanager_domain,  hypervisor_pvmfw_prop)')
+dontaudit virtualizationmanager_domain hypervisor_pvmfw_prop:file read;
 neverallow {
   domain
   -init
   -dumpstate
-  userdebug_or_eng(`-virtualizationmanager')
-  is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, -early_virtmgr)
+  userdebug_or_eng(`-virtualizationmanager_domain')
+  is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, -early_virtmgr_domain)
 } hypervisor_pvmfw_prop:file no_rw_file_perms;
 
-# Allow virtualizationmanager to be read custom virtualizationmanager configuration
-userdebug_or_eng(`get_prop(virtualizationmanager, hypervisor_virtualizationmanager_prop)')
-dontaudit virtualizationmanager hypervisor_virtualizationmanager_prop:file read;
+# Allow virtualizationmanager_domain to be read custom virtualizationmanager_domain configuration
+userdebug_or_eng(`get_prop(virtualizationmanager_domain,  hypervisor_virtualizationmanager_prop)')
+dontaudit virtualizationmanager_domain hypervisor_virtualizationmanager_prop:file read;
 neverallow {
   domain
   -init
   -dumpstate
-  userdebug_or_eng(`-virtualizationmanager')
-  is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, -early_virtmgr)
+  userdebug_or_eng(`-virtualizationmanager_domain')
+  is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, -early_virtmgr_domain)
 } hypervisor_virtualizationmanager_prop:file no_rw_file_perms;
 
-# Allow virtualizationmanager service to talk to tombstoned to push guest ramdumps
-unix_socket_connect(virtualizationmanager, tombstoned_crash, tombstoned)
+# Allow virtualizationmanager_domain service to talk to tombstoned to push guest ramdumps
+unix_socket_connect(virtualizationmanager_domain,  tombstoned_crash, tombstoned)
 
 # Append ramdumps to tombstone files passed as fds from tombstoned
-allow virtualizationmanager tombstone_data_file:file { append getattr };
-allow virtualizationmanager tombstoned:fd use;
+allow virtualizationmanager_domain tombstone_data_file:file { append getattr };
+allow virtualizationmanager_domain tombstoned:fd use;
 
-# Allow virtualizationmanager to read file system DT for VM reference DT and AVF debug policy
-r_dir_file(virtualizationmanager, proc_dt_avf)
-r_dir_file(virtualizationmanager, sysfs_dt_avf)
+# Allow virtualizationmanager_domain to read file system DT for VM reference DT and AVF debug policy
+r_dir_file(virtualizationmanager_domain,  proc_dt_avf)
+r_dir_file(virtualizationmanager_domain,  sysfs_dt_avf)
 
-# virtualizationmanager to be client of secretkeeper HAL. It ferries SecretManagement messages
-# from pVM to HAL.
-hal_client_domain(virtualizationmanager, hal_secretkeeper);
-
-# Let virtualizationmanager open test artifacts under /data/local/tmp with file path.
+# Let virtualizationmanager_domain open test artifacts under /data/local/tmp with file path.
 # (e.g. custom debug policy)
 userdebug_or_eng(`
-  allow virtualizationmanager shell_data_file:dir search;
-  allow virtualizationmanager shell_data_file:file open;
+  allow virtualizationmanager_domain shell_data_file:dir search;
+  allow virtualizationmanager_domain shell_data_file:file open;
 ')
 
-# Allow virtualizationmanager to read/write microdroid/vm related files in vendor partition
-r_dir_file(virtualizationmanager, vendor_microdroid_file)
-allow virtualizationmanager vendor_vm_file:file { read getattr };
-allow virtualizationmanager vendor_vm_data_file:file { read write getattr };
+# Allow virtualizationmanager_domain to read/write microdroid/vm related files in vendor partition
+r_dir_file(virtualizationmanager_domain,  vendor_microdroid_file)
+allow virtualizationmanager_domain vendor_vm_file:file { read getattr };
+allow virtualizationmanager_domain vendor_vm_data_file:file { read write getattr };
 
-# Allow virtualizationmanager to read /data/nativetest for VTS
-r_dir_file(virtualizationmanager, nativetest_data_file)
+# Allow virtualizationmanager_domain to read /data/nativetest for VTS
+r_dir_file(virtualizationmanager_domain,  nativetest_data_file)
 
 # The virtualizationmanager needs to listen to changes to
 # persist.avf_vm.traced_relay.enable.{vm_name} sysprop to start/stop traced_relay service
 # inside the VM. Additionally it needs to set this sysprop when VM is killed to stop the
 # monitoring thread.
-set_prop(virtualizationmanager, avf_vm_traced_relay_enabled_prop)
+set_prop(virtualizationmanager_domain, avf_vm_traced_relay_enabled_prop)
+
+# Allow virtmgr to write dump for dumpsys
+allow virtualizationmanager_domain virtualizationservice:fifo_file write;
 
 # Do not allow writing vendor_microdroid_file from any process.
 neverallow {
@@ -152,33 +168,35 @@ neverallow {
 } vendor_microdroid_file:file no_w_file_perms;
 
 # Allow reading files under /proc/[crosvm pid]/, for collecting CPU & memory usage inside VM.
-r_dir_file(virtualizationmanager, crosvm);
+r_dir_file(virtualizationmanager_domain,  crosvm_domain);
 
 # For debug purposes we try to get the canonical path from /proc/self/fd/N. That triggers
 # a harmless denial for CompOS log files, so ignore that.
-dontaudit virtualizationmanager apex_module_data_file:dir search;
+dontaudit virtualizationmanager_domain apex_module_data_file:dir search;
 
 is_flag_enabled(RELEASE_AVF_ENABLE_DEVICE_ASSIGNMENT, `
-    # virtualizationmanager holds references to bound devices, returned from vfio_handler
-    binder_call(virtualizationmanager, vfio_handler)
+    # virtualizationmanager_domain holds references to bound devices, returned from vfio_handler
+    binder_call(virtualizationmanager_domain,  vfio_handler)
 ')
 
 is_flag_enabled(RELEASE_AVF_ENABLE_NETWORK, `
-    # Allow virtualizationmanager to deal with file descriptors of TAP interfaces.
-    allow virtualizationmanager tun_device:chr_file rw_file_perms;
-    allow virtualizationmanager vmnic:fd use;
+    # Allow virtualizationmanager_domain to deal with file descriptors of TAP interfaces.
+    allow virtualizationmanager_domain tun_device:chr_file rw_file_perms;
+    allow virtualizationmanager_domain vmnic:fd use;
 ')
 
-# virtualizationmanager reads tee_service_contexts_file to determine if VM is allowed
+# virtualizationmanager_domain reads tee_service_contexts_file to determine if VM is allowed
 # to access requested tee services
-allow virtualizationmanager tee_service_contexts_file:file r_file_perms;
-# virtualizationmanager uses libselinux to check if VM is allowed to access requested
+allow virtualizationmanager_domain tee_service_contexts_file:file r_file_perms;
+# virtualizationmanager_domain uses libselinux to check if VM is allowed to access requested
 # tee services.
-selinux_check_access(virtualizationmanager)
+selinux_check_access(virtualizationmanager_domain)
 
-# virtualizationmanager needs to talk to IVmCapabilitiesService HAL to allow specific VMs to
-# issue vendor-private smcs.
-hal_client_domain(virtualizationmanager, hal_vm_capabilities);
+# virtmanager gets the vm_fd from crosvm.
+# Ideally we would want vm_fd to have it's own domain, but unfortunately currently the vm_fd created
+# by kernel is not selinux aware.
+# TODO(b/466052172): change to the specific vm_fd domain once it's possible.
+allow virtualizationmanager_domain crosvm_domain:fd use;
 
 # don't let virtmgr give root privileges to itself
-neverallow virtualizationmanager self:global_capability_class_set *;
+neverallow virtualizationmanager_domain self:global_capability_class_set *;

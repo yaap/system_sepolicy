@@ -16,9 +16,7 @@ hal_client_domain(mediacodec, hal_omx)
 hal_client_domain(mediacodec, hal_allocator)
 hal_client_domain(mediacodec, hal_graphics_allocator)
 
-allow mediacodec gpu_device:chr_file rw_file_perms;
-allow mediacodec gpu_device:dir r_dir_perms;
-allow mediacodec ion_device:chr_file rw_file_perms;
+gpu_sphal_use(mediacodec)
 allow mediacodec dmabuf_system_heap_device:chr_file r_file_perms;
 allow mediacodec video_device:chr_file rw_file_perms;
 allow mediacodec video_device:dir search;
@@ -39,4 +37,3 @@ neverallow mediacodec { file_type fs_type }:file execute_no_trans;
 # https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
 neverallow mediacodec domain:{ udp_socket rawip_socket } *;
 neverallow mediacodec { domain userdebug_or_eng(`-su') }:tcp_socket *;
-

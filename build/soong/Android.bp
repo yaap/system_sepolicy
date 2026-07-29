@@ -25,6 +25,7 @@ bootstrap_go_package {
     pkgPath: "android/soong/selinux",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
         "blueprint-proptools",
         "soong",
         "soong-android",
@@ -41,6 +42,7 @@ bootstrap_go_package {
         "policy.go",
         "selinux.go",
         "selinux_contexts.go",
+        "selinux_enc.go",
         "sepolicy_freeze.go",
         "sepolicy_neverallow.go",
         "sepolicy_vers.go",

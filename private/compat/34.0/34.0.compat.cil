@@ -20,3 +20,7 @@
 (allow hal_wifi_supplicant self (cap_userns (setuid)))
 (allow hal_wifi_supplicant self (capability (setgid)))
 (allow hal_wifi_supplicant self (cap_userns (setgid)))
+
+;; New system images do not allow open() to work on ashmem for all domains,
+;; so add it for compatibility with older vendor images.
+(allow domain ashmem_libcutils_device (chr_file (open)))

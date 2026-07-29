@@ -1,0 +1,24 @@
+###
+### Untrusted apps.
+###
+### This file defines the rules for untrusted apps running with
+### 32 < targetSdkVersion <= 36.
+###
+### See public/untrusted_app.te for more information about which apps are
+### placed in this selinux domain.
+###
+
+until_board_api(202604, `
+type untrusted_app_34, domain;
+')
+
+typeattribute untrusted_app_34 coredomain;
+
+app_domain(untrusted_app_34)
+untrusted_app_domain(untrusted_app_34)
+net_domain(untrusted_app_34)
+bluetooth_domain(untrusted_app_34)
+
+allow untrusted_app_34 domain:memfd_file ioctl;
+allowxperm untrusted_app_34 domain:memfd_file ioctl ashmem_ioctls;
+allow untrusted_app_34 ashmem_libcutils_device:chr_file open;

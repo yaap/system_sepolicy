@@ -29,6 +29,9 @@ allow aconfigd apex_mnt_dir:dir r_dir_perms;
 allow aconfigd apex_mnt_dir:file r_file_perms;
 dontaudit aconfigd apex_info_file:file r_file_perms;
 
+# interact with kcmdline properties to inform bootloader about relevant flags
+set_prop(aconfigd, kcmdline_prop)
+
 # Suppress denials if the selinux labels on /metadata are incorrect during early-init.
 # aconfigd will try again later after all of /metadata has been fixed up by restorecon().
 # The fixed up labels persist across reboots, so early-init aconfigd should succeed on

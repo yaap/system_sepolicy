@@ -1,0 +1,28 @@
+# process memory guardian daemon
+type pmgd, domain;
+typeattribute pmgd coredomain;
+
+# This type is associated with the binary in file_contexts.  It is consumed
+# by the init_daemon_domain macro.
+type pmgd_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(pmgd)
+
+# Allow access to cgroup files
+allow pmgd cgroup_v2:dir r_dir_perms;
+allow pmgd cgroup_v2:file rw_file_perms;
+
+# Allow pmgd to clean up cgroups as per calls to kill_process_group
+allow pmgd cgroup_v2:dir rmdir;
+
+# Allow pmgd to write to statsd socket.
+unix_socket_send(pmgd, statsdw, statsd)
+
+# Allow procfs access so pmgd can find the system_server process.
+r_dir_file(pmgd, system_server)
+dontaudit pmgd domain:dir { open search read getattr };
+
+# Allow to exec the perfetto cmdline client and pass it the trace config on
+# stdint through a pipe. It allows statsd to  capture traces and hand them
+# to Android dropbox.
+domain_auto_trans(pmgd, perfetto_exec, perfetto)

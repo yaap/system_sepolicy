@@ -4,8 +4,8 @@ type proc_allocinfo, fs_type, proc_type;
 # /proc/config.gz
 type config_gz, fs_type, proc_type;
 
-# /proc/sys/kernel/firmware_config/*
-until_board_api(202604, `type proc_firmware_config, fs_type, proc_type;')
+# /proc/consoles
+type proc_consoles, fs_type, proc_type;
 
 # /sys/fs/bpf/<dir> for mainline tethering use
 # TODO: move S+ fs_bpf_tethering here from public/file.te
@@ -14,12 +14,18 @@ type fs_bpf_net_shared, fs_type, bpffs_type;
 type fs_bpf_netd_readonly, fs_type, bpffs_type;
 type fs_bpf_netd_shared, fs_type, bpffs_type;
 type fs_bpf_loader, fs_type, bpffs_type;
+type fs_bpf_lock_contention, fs_type, bpffs_type;
 type fs_bpf_uprobestats, fs_type, bpffs_type;
 type fs_bpf_memevents, fs_type, bpffs_type;
 type fs_bpf_cputimeinstate, fs_type, bpffs_type;
+type fs_bpf_kernelwakelockduration, fs_type, bpffs_type;
+type fs_bpf_dmabuf, fs_type, bpffs_type;
 
 # /data/system/mediadrm
 type mediadrm_system_data_file, file_type, data_file_type, core_data_file_type;
+
+# /data/system/users/user.list
+type user_list_data_file, file_type, data_file_type, core_data_file_type;
 
 # /data/misc/storaged
 type storaged_data_file, file_type, data_file_type, core_data_file_type;
@@ -56,6 +62,9 @@ type oatdump_exec, system_file_type, exec_type, file_type;
 type sdk_sandbox_system_data_file, file_type, data_file_type, core_data_file_type;
 # /data/misc_{ce/de}/<user>/sdksandbox/<app-name>/* subdirectory for sdk sandbox processes
 type sdk_sandbox_data_file, file_type, data_file_type, core_data_file_type, app_data_file_type;
+
+# /data/data/{app-name}-pcc data directory for a pcc component belonging to {app-name}
+type pcc_data_file, file_type, data_file_type, core_data_file_type, app_data_file_type;
 
 # /sys/kernel/debug/kcov for coverage guided kernel fuzzing in userdebug builds.
 type debugfs_kcov, fs_type, debugfs_type;
@@ -101,12 +110,14 @@ type apex_tethering_data_file, file_type, data_file_type, core_data_file_type, a
 # /data/misc/apexdata/com.android.uwb
 type apex_uwb_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
 
+# /data/misc/apexdata/com.android.wifi
+type apex_wifi_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
+
 # legacy labels for various /data/misc[_ce|_de]/*/apexdata directories - retained
 # for backward compatibility b/217581286
 type apex_appsearch_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
 type apex_permission_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
 type apex_scheduling_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
-type apex_wifi_data_file, file_type, data_file_type, core_data_file_type, apex_data_file_type;
 
 # Label for AppSearch data files
 # https://developer.android.com/develop/ui/views/search/appsearch
@@ -127,24 +138,23 @@ type odsign_data_file, file_type, data_file_type, core_data_file_type;
 # /data/misc/odsign_metrics
 type odsign_metrics_file, file_type, data_file_type, core_data_file_type;
 
-# /data/misc/virtualizationservice
-# The type needs to be mlstrustedobject to allow for being accessed from
-# virtualizationmanager, which runs at a more constrained MLS level.
-until_board_api(202604, `
-    type virtualizationservice_data_file, file_type, data_file_type, core_data_file_type, mlstrustedobject;
-')
-
 # /mnt/vm
 type vm_data_file, file_type, core_data_file_type;
 
 # /data/system/environ
 type environ_system_data_file, file_type, data_file_type, core_data_file_type;
 
+# /data/system_ce/[0-9]+/audit_logs
+type pcc_auditlogs_data_file, file_type, data_file_type, core_data_file_type;
+
 # /data/misc/bootanim
 type bootanim_data_file, file_type, data_file_type, core_data_file_type;
 
 # /data/misc/surfaceflinger
 type surfaceflinger_data_file, file_type, data_file_type, core_data_file_type;
+
+# /data/per_boot
+type per_boot_file, file_type, data_file_type, core_data_file_type;
 
 # /dev/kvm
 # The type needs to be mlstrustedobject to allow for being accessed from
@@ -177,14 +187,14 @@ type sysfs_uprobe, fs_type, sysfs_type;
 # Type for aconfig daemon socket
 type aconfigd_socket, file_type, coredomain_socket, mlstrustedobject;
 
+# Type for device_config executable
+type device_config_exec, system_file_type, exec_type, file_type;
+
 # Type for aconfig mainline daemon socket
 type aconfigd_mainline_socket, file_type, coredomain_socket,  mlstrustedobject;
 
 # Type for /(system|system_ext|product)/etc/aconfig
 type system_aconfig_storage_file, system_file_type, file_type;
-
-# Type for Gatekeeper file
-type gatekeeper_vendor_data_file, file_type, data_file_type;
 
 # Type for /vendor/etc/aconfig
 type vendor_aconfig_storage_file, vendor_file_type, file_type;
@@ -216,6 +226,9 @@ type sysfs_firmware_acpi_tables, fs_type, sysfs_type;
 
 # Type for /system/bin/pbtombstone.
 type pbtombstone_exec, system_file_type, exec_type, file_type;
+
+# Type for /dev/socket/microdroid_managed_socket_file
+type microdroid_managed_socket_file, file_type, coredomain_socket,  mlstrustedobject;
 
 # Allow files to be created in their appropriate filesystems.
 allow fs_type self:filesystem associate;
@@ -264,22 +277,16 @@ type exp_partition_data_file, file_type, data_file_type, core_data_file_type;
 # statsd service stores list of atoms in use
 type statsd_atoms_list_file, file_type, data_file_type, core_data_file_type;
 
-# File type used for memfds created by libcutils. This type has similar access
-# control rules as the other ashmem types to smooth over the transition from
-# ashmem to memfd.
-type ashmem_compat_memfd, file_type, mlstrustedobject;
-
-# File type used for the text file containing the type that libcutils
-# uses when constructing contexts for memfd. This needs to be accessible
-# to all processes.
-type ashmem_compat_memfd_context_file, system_file_type, file_type;
-
 # /sys/device/virtual/misc/ublk-control/
 type sysfs_ublk, fs_type, sysfs_type;
 
-# /sys/bus/thunderbolt and /sys/class/typec
-until_board_api(202604, `type sysfs_thunderbolt, fs_type, sysfs_type;')
-until_board_api(202604, `type sysfs_typec, fs_type, sysfs_type;')
-until_board_api(202604, `type sysfs_usb_pd, fs_type, sysfs_type;')
+# /data/system/aiseal
+type aiseal_data_file, file_type, data_file_type, core_data_file_type;
 
 type zygote_next_socket, file_type, coredomain_socket;
+
+# /sys/kernel/security/safesetid/uid_allowlist_policy
+type uid_allowlist_policy, file_type;
+
+# /sys/module/binder/parameters/impl
+type sysfs_binder_impl, fs_type, sysfs_type;

@@ -37,9 +37,7 @@ r_dir_file(surfaceflinger, binderservicedomain)
 r_dir_file(surfaceflinger, appdomain)
 
 # Access the GPU.
-allow surfaceflinger gpu_device:chr_file rw_file_perms;
-allow surfaceflinger gpu_device:dir r_dir_perms;
-allow surfaceflinger sysfs_gpu:file r_file_perms;
+gpu_sphal_use(surfaceflinger)
 
 # Access /dev/graphics/fb0.
 allow surfaceflinger graphics_device:dir search;
@@ -73,6 +71,8 @@ get_prop(surfaceflinger, device_config_surface_flinger_native_boot_prop)
 # Use open files supplied by an app.
 allow surfaceflinger appdomain:fd use;
 allow surfaceflinger { app_data_file privapp_data_file }:file { read write };
+# lut_shared_mem buffer access
+allow surfaceflinger appdomain:memfd_file { getattr map read write };
 
 # Allow writing surface traces to /data/misc/wmtrace.
 userdebug_or_eng(`
@@ -91,7 +91,7 @@ allow surfaceflinger adbd:unix_stream_socket { read write getattr };
 # the file descriptors over binder. There's no mechanism to mark a socket as write-only.
 # shutdown is used to close the read-end of the sockets that are sent to SurfaceFlinger. See
 # b/353597444
-allow surfaceflinger { appdomain -isolated_app_all -ephemeral_app -sdk_sandbox_all }:unix_stream_socket { read write };
+allow surfaceflinger { appdomain -isolated_app_all -ephemeral_app -pcc_component -sdk_sandbox_all }:unix_stream_socket { read write };
 allow surfaceflinger bootanim:unix_stream_socket { read write };
 allow surfaceflinger automotive_display_service:unix_stream_socket { read write };
 
@@ -113,7 +113,7 @@ allow surfaceflinger power_service:service_manager find;
 allow surfaceflinger vr_manager_service:service_manager find;
 allow surfaceflinger window_service:service_manager find;
 allow surfaceflinger inputflinger_service:service_manager find;
-
+allow surfaceflinger gpu_service:service_manager find;
 
 # allow self to set SCHED_FIFO
 allow surfaceflinger self:global_capability_class_set sys_nice;
@@ -124,7 +124,6 @@ r_dir_file(surfaceflinger, system_file)
 allow surfaceflinger tmpfs:dir r_dir_perms;
 allow surfaceflinger system_server:fd use;
 allow surfaceflinger system_server:unix_stream_socket { read write };
-allow surfaceflinger ion_device:chr_file r_file_perms;
 allow surfaceflinger dmabuf_system_heap_device:chr_file r_file_perms;
 
 # pdx IPC
@@ -156,6 +155,15 @@ allow surfaceflinger surfaceflinger_data_file:file create_file_perms;
 
 # Surfaceflinger should not be reading default vendor-defined properties.
 dontaudit surfaceflinger vendor_default_prop:file read;
+
+# Allow calling gpuservice
+binder_call(surfaceflinger, gpuservice)
+
+# Allow crosvm interact with surfaceflinger to update the VM surface directly
+# (like updating the position of the surface displaying the in-VM cursor)
+is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
+  binder_call(surfaceflinger, crosvm_domain)
+')
 
 ###
 ### Neverallow rules

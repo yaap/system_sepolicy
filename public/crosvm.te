@@ -1,4 +1,4 @@
-type crosvm, domain, coredomain;
+type crosvm_vendor, domain, coredomain, crosvm_domain;
 
 # system/sepolicy/public is for vendor-facing type and attribute definitions.
 # DO NOT ADD allow, neverallow, or dontaudit statements here.

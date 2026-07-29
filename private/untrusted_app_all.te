@@ -48,8 +48,11 @@ allow untrusted_app_all asec_apk_file:dir r_dir_perms;
 # Execute libs in asec containers.
 allow untrusted_app_all asec_public_file:file { execute };
 
-# Used by Finsky / Android "Verify Apps" functionality when
-# running "adb install foo.apk".
+# Used by:
+# - Finsky / Android "Verify Apps" functionality when running
+#     "adb install foo.apk".
+# - Android Studio when attaching a profiler to an app
+#     (https://cs.android.com/android-studio/platform/tools/adt/idea/+/mirror-goog-studio-main:profilers/src/com/android/tools/profilers/sessions/SessionsManager.java;l=545;drc=7c5e986f2c8a8786c2922d9a6bd359a76197129e).
 # TODO: Long term, we don't want apps probing into shell data files.
 # Figure out a way to remove these rules.
 allow untrusted_app_all shell_data_file:file r_file_perms;
@@ -86,6 +89,7 @@ allow untrusted_app_all mediaextractor_service:service_manager find;
 allow untrusted_app_all mediametrics_service:service_manager find;
 allow untrusted_app_all mediadrmserver_service:service_manager find;
 allow untrusted_app_all nfc_service:service_manager find;
+allow untrusted_app_all npu_service:service_manager find;
 allow untrusted_app_all radio_service:service_manager find;
 allow untrusted_app_all app_api_service:service_manager find;
 allow untrusted_app_all vr_manager_service:service_manager find;

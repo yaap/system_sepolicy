@@ -72,6 +72,7 @@ allow webview_zygote system_file:dir r_dir_perms;
 
 # Read and inspect temporary files (like system properties) managed by zygote.
 allow webview_zygote zygote_tmpfs:file { read getattr };
+allow webview_zygote zygote:memfd_file { read getattr };
 # Child of zygote.
 allow webview_zygote zygote:fd use;
 allow webview_zygote zygote:process sigchld;
@@ -96,6 +97,12 @@ get_prop(zygote, odsign_prop)
 # /data/resource-cache
 allow webview_zygote resourcecache_data_file:file r_file_perms;
 allow webview_zygote resourcecache_data_file:dir r_dir_perms;
+
+# Read /system/bin/app_process.
+allow webview_zygote zygote_exec:file r_file_perms;
+
+# Allow crashes to generate tombstones.
+crash_dump_fallback(webview_zygote)
 
 #####
 ##### Neverallow

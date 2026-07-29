@@ -1,0 +1,44 @@
+type aisealhostservice_exec, exec_type, file_type, system_file_type;
+
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+    type aisealhostservice, domain;
+    typeattribute aisealhostservice coredomain;
+
+    # aisealhostservice needs to be mlstrustedsubject to be able to relabel
+    # socket connections to be used by tenant applications.
+    typeattribute aisealhostservice mlstrustedsubject;
+
+    # Host dynamic AIDL services.
+    init_daemon_domain(aisealhostservice)
+    binder_use(aisealhostservice)
+    add_service(aisealhostservice, aiseal_host_service)
+
+    # Allow aisealhostservice to read AiSeal properties.
+    get_prop(aisealhostservice, aiseal_prop)
+
+    # Let aisealhostservice to start VM.
+    virtualizationservice_use(aisealhostservice)
+
+    # Allow calling into the system server to find native services.
+    # "permission_service" to check permissions, and "package_native" for
+    # staged apex info.
+    binder_call(aisealhostservice, system_server)
+    allow aisealhostservice { package_native_service permission_service }:service_manager find;
+
+    # Find and open tenant APK files.
+    allow aisealhostservice apk_data_file:dir search;
+    allow aisealhostservice apk_data_file:file r_file_perms;
+
+    # Manage /data/system/aiseal.
+    allow aisealhostservice aiseal_data_file:dir create_dir_perms;
+    allow aisealhostservice aiseal_data_file:file create_file_perms;
+
+    # Let aisealhostservice to create vsock connection to the payload hosted
+    # in the multi-tenant VM for the host application owning the payload.
+    allow aisealhostservice self:vsock_socket { create_socket_perms_no_ioctl };
+    neverallow { domain -aisealhostservice } aisealhostservice:vsock_socket { accept bind create connect listen };
+
+    # Allow aisealhostservice to set context for vsock sockets to be used by
+    # tenant applications.
+    allow aisealhostservice self:process setsockcreate;
+') # is_flag_enabled(RELEASE_AISEAL_FRAMEWORK)

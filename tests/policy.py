@@ -17,7 +17,9 @@ import re
 import os
 import sys
 import platform
+
 import fc_sort
+import utils
 
 ###
 # Check whether the regex will match a file path starting with the provided
@@ -131,7 +133,7 @@ class Policy:
     # for types labeled in genfs_contexts.
     def AssertGenfsFilesystemTypesHaveAttr(self, Filesystem, Attr):
         TypesPol = self.QueryTypeAttribute(Attr, True)
-        TypesGenfs = self.__GenfsDict[Filesystem]
+        TypesGenfs = set([ Type for _, _, Type in self.__GenfsDict[Filesystem] ])
         violators = TypesGenfs.difference(TypesPol)
 
         ret = ""
@@ -189,10 +191,12 @@ class Policy:
 
     # Return all attributes associated with a type if IsAttr=False or
     # all types associated with an attribute if IsAttr=True
-    def QueryTypeAttribute(self, Type, IsAttr):
+    def QueryTypeAttribute(self, Type, IsAttr, IgnoreMissing=False):
         TypeIterP = self.__libsepolwrap.init_type_iter(self.__policydbP,
                         create_string_buffer(Type.encode("ascii")), IsAttr)
         if (TypeIterP == None):
+            if IgnoreMissing:
+                return {}
             sys.exit("Failed to initialize type iterator")
         buf = create_string_buffer(self.__BUFSIZE)
         TypeAttr = set()
@@ -283,6 +287,15 @@ class Policy:
         for Rule in self.__Rules:
             if self.__TERuleMatch(Rule, **kwargs):
                 yield Rule
+
+    def QueryGenfs(self, **kwargs):
+        for fs in self.__GenfsDict:
+            if ("fs" in kwargs and kwargs['fs'] and kwargs['fs'] != fs):
+                continue
+            for path, context, Type in self.__GenfsDict[fs]:
+                if ("target" in kwargs and kwargs['target'] and kwargs['target'] != Type):
+                    continue
+                yield (fs, path, context, Type)
 
     # Same as QueryTERule but only using the expanded ruleset.
     # i.e. all attributes have been expanded to their various types.
@@ -450,9 +463,8 @@ class Policy:
         path, context = buf.rsplit(' ', 1)
         Type = context.split(":")[2]
         if not fs in Dict:
-            Dict[fs] = {Type}
-        else:
-            Dict[fs].add(Type)
+            Dict[fs] = []
+        Dict[fs].append((path, context, Type))
 
     def __InitGenfsCon(self):
         self.__GenfsDict = {}
@@ -669,3 +681,17 @@ class TestPolicy:
             if sctx.entrypointpaths is not None:
                 for path in sctx.entrypointpaths:
                     print("\t\t"+str(path))
+
+def ReadLibsepolwrap(temp_dir):
+    """Extracts libsepolwrap.so within the binary distribution.
+
+    Make sure the following are added to your build target:
+        libs: ["pysepolwrap"],
+        data: [":libsepolwrap"],
+
+    Then, in your main executable, use:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
+            libpath = policy.ReadLibsepolwrap(temp_dir)
+            pol = policy.Policy(options.policy, options.file_contexts, libpath)
+    """
+    return utils.extract_data(temp_dir, 'libsepolwrap.so')

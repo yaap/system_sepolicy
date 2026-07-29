@@ -63,7 +63,7 @@ func (b *bugMap) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	srcPaths := b.expandSeSources(ctx)
 	out := android.PathForModuleGen(ctx, b.Name())
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        android.Cat,
+		Rule:        android.CatRule,
 		Inputs:      srcPaths,
 		Output:      out,
 		Description: "Combining bug_map for " + b.Name(),

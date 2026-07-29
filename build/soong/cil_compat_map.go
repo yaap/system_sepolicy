@@ -24,14 +24,17 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../../../build/blueprint/gobtools/codegen
+
 var (
 	combine_maps    = pctx.HostBinToolVariable("combine_maps", "combine_maps")
 	combineMapsCmd  = "${combine_maps} -t ${topHalf} -b ${bottomHalf} -o $out"
 	combineMapsRule = pctx.StaticRule(
 		"combineMapsRule",
 		blueprint.RuleParams{
-			Command:     combineMapsCmd,
-			CommandDeps: []string{"${combine_maps}"},
+			Command:         combineMapsCmd,
+			CommandDeps:     []string{"${combine_maps}"},
+			SandboxDisabled: true,
 		},
 		"topHalf",
 		"bottomHalf",
@@ -78,6 +81,7 @@ type cilCompatMap struct {
 	installPath   android.InstallPath
 }
 
+// @auto-generate: gob
 type CilCompatMapGeneratorInfo struct {
 	GeneratedMapFile android.OptionalPath
 }
@@ -126,7 +130,7 @@ func (c *cilCompatMap) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	bottomHalf := android.PathForModuleGen(ctx, "bottom_half")
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cat,
+		Rule:   android.CatRule,
 		Output: bottomHalf,
 		Inputs: srcFiles,
 	})

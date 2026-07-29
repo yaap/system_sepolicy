@@ -1,0 +1,12 @@
+# Permissions for HALs that use wrapfds.
+
+allow wrapfd_hal_domain system_server_wrapfd:anon_inode rw_file_perms;
+allowxperm wrapfd_hal_domain system_server_wrapfd:anon_inode ioctl {
+  dma_buf_ioctls WRAPFD_DEV_IOC_ACQUIRE_OWNERSHIP WRAPFD_DEV_IOC_ALLOW_GUESTS
+  WRAPFD_DEV_IOC_PROHIBIT_GUESTS WRAPFD_DEV_IOC_RELEASE_OWNERSHIP
+};
+
+neverallowxperm wrapfd_hal_domain system_server_wrapfd:anon_inode ioctl ~{
+  dma_buf_ioctls WRAPFD_DEV_IOC_ACQUIRE_OWNERSHIP WRAPFD_DEV_IOC_ALLOW_GUESTS
+  WRAPFD_DEV_IOC_PROHIBIT_GUESTS WRAPFD_DEV_IOC_RELEASE_OWNERSHIP
+};

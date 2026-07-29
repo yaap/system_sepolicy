@@ -1,3 +1,4 @@
+type apex_dm_device, dev_type;
 type block_device, dev_type;
 type console_device, dev_type;
 type device, dev_type, fs_type;
@@ -9,6 +10,7 @@ type kmsg_debug_device, dev_type;
 type kmsg_device, dev_type;
 type loop_control_device, dev_type;
 type loop_device, dev_type;
+type microdroid_managed_socket_dir, dev_type;
 type null_device, dev_type;
 type open_dice_device, dev_type;
 type owntty_device, dev_type;

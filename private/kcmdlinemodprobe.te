@@ -1,0 +1,17 @@
+type kcmdlinemodprobe, domain, coredomain;
+type kcmdlinemodprobe_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(kcmdlinemodprobe)
+
+# kcmdlinemodprobe uses this file to determine whether Rust Binder should be
+# loaded (read), and if so, whether it was already loaded (write)
+allow kcmdlinemodprobe sysfs_binder_impl:file rw_file_perms;
+
+# kcmdlinemodprobe loads kernel modules from the system_dlkm partition.
+allow kcmdlinemodprobe system_dlkm_file:dir r_dir_perms;
+allow kcmdlinemodprobe system_dlkm_file:file r_file_perms;
+allow kcmdlinemodprobe system_dlkm_file:system module_load;
+allow kcmdlinemodprobe self:capability sys_module;
+
+# libmodprobe reads /proc/cmdline
+allow kcmdlinemodprobe proc_cmdline:file r_file_perms;

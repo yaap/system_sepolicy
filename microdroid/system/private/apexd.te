@@ -13,8 +13,9 @@ allowxperm apexd loop_device:blk_file ioctl {
   LOOP_SET_BLOCK_SIZE
   LOOP_SET_DIRECT_IO
   LOOP_CLR_FD
-  BLKFLSBUF
   LOOP_CONFIGURE
+  BLKFLSBUF
+  BLKRASET
 };
 # Allow apexd to access /dev/block
 allow apexd dev_type:dir r_dir_perms;
@@ -26,6 +27,9 @@ allow apexd vd_device:blk_file r_file_perms;
 # allow apexd to access /dev/block/dm-* (device-mapper entries)
 allow apexd dm_device:chr_file rw_file_perms;
 allow apexd dm_device:blk_file rw_file_perms;
+allow apexd apex_dm_device:blk_file rw_file_perms;
+allowxperm apexd dm_device:blk_file ioctl BLKRASET;
+allowxperm apexd apex_dm_device:blk_file ioctl BLKRASET;
 
 # sys_admin is required to access the device-mapper and mount
 # dac_override, chown, and fowner are needed for snapshot and restore
@@ -103,3 +107,12 @@ get_prop(apexd, cold_boot_done_prop)
 
 # apexd uses this to determine where there metadata partition is.
 get_prop(apexd, apexd_payload_metadata_prop)
+
+# Allow apexd to directly create loop and dm block devices to optimize boot time.
+# This bypasses the dependency on ueventd by allowing apexd to:
+# 1. Use setfscreatecon() to set the correct label (loop_device/apex_dm_device).
+# 2. Use mknod() to create the nodes directly in /dev/block.
+allow apexd self:global_capability_class_set mknod;
+allow apexd { loop_device apex_dm_device }:blk_file create;
+allow apexd block_device:dir { add_name write };
+allow apexd self:process setfscreate;

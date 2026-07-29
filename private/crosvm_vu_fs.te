@@ -1,0 +1,88 @@
+type crosvm_vu_fs, domain, coredomain;
+type crosvm_vu_fs_tmpfs, file_type;
+type crosvm_vu_fs_exec, system_file_type, exec_type, file_type;
+
+# Allow crosvm_vu_fs to be started via crosvm_vu_fs_exec
+allow crosvm_vu_fs crosvm_vu_fs_exec:file { entrypoint read execute getattr map };
+domain_auto_trans(crosvm_domain, crosvm_vu_fs_exec, crosvm_vu_fs);
+
+# Allow crosvm_vu_fs to execute crosvm_exec (for nested crosvm calls) without transition.
+allow crosvm_vu_fs crosvm_exec:file rx_file_perms;
+
+# Let crosvm_vu_fs create temporary files.
+tmpfs_domain(crosvm_vu_fs)
+
+# crosvm_vu_fs needs to talk to crosvm_domain via virt queue which is implemented
+# as an anonymous memory (tmpfs) on the crosvm_domain side.
+allow crosvm_vu_fs crosvm_domain_tmpfs:file { read write getattr map };
+
+# Let crosvm_vu_fs receive file descriptors from VirtualizationService.
+allow crosvm_vu_fs virtualizationmanager_domain:fd use;
+
+# Let crosvm_vu_fs use file descriptors and memfd files from crosvm.
+allow crosvm_vu_fs crosvm_domain:fd use;
+allow crosvm_vu_fs crosvm_domain:memfd_file { read write map };
+
+# Allow communication between crosvm and crosvm_vu_fs via unix stream sockets.
+allow crosvm_domain crosvm_vu_fs:unix_stream_socket { connectto read write getattr getopt shutdown };
+allow crosvm_vu_fs crosvm_domain:unix_stream_socket { read write getattr getopt shutdown };
+allow crosvm_vu_fs crosvm_domain:fd use;
+allow crosvm_domain crosvm_vu_fs:fd use;
+
+# Allow using a socket path under /data/misc/virtualizationservice.
+# TODO: Use /proc/self/fd passing to avoid this.
+allow crosvm_vu_fs virtualizationservice_data_file:dir search;
+
+# When running a VM as root we get spurious capability denials.
+# Suppress them.
+userdebug_or_eng(`
+  dontaudit crosvm_vu_fs self:capability ipc_lock;
+')
+
+# Allow crosvm_vu_fs to mount fuse path in guest VM through virtiofs
+allow crosvm_vu_fs fuse:file create_file_perms;
+allow crosvm_vu_fs fuse:dir create_dir_perms;
+allow crosvm_vu_fs mnt_user_file:dir search;
+
+# Allow crosvm_vu_fs to create unix socket for vhost-user-fs
+allow crosvm_vu_fs virtualizationservice_data_file:dir { add_name write remove_name };
+allow crosvm_vu_fs virtualizationservice_data_file:sock_file { create write unlink };
+
+# Don't allow crosvm_vu_fs to open files that it doesn't own.
+# This is important because a malicious application could try to start a VM with a composite disk
+# image referring by name to files which it doesn't have permission to open, trying to get crosvm_vu_fs to
+# open them on its behalf. By preventing crosvm_vu_fs from opening any other files we prevent this
+# potential privilege escalation. See http://b/192453819 for more discussion.
+neverallow crosvm_vu_fs {
+  virtualizationservice_data_file
+  staging_data_file
+  apk_data_file
+  app_data_file
+  privapp_data_file
+  is_flag_enabled(RELEASE_UNLOCKED_STORAGE_API, `storage_area_content_file')
+  is_flag_enabled(RELEASE_AVF_ENABLE_EARLY_VM, `vm_data_file')
+  userdebug_or_eng(`-shell_data_file')
+}:file open;
+
+# Don't allow crosvm_vu_fs to have access to ordinary vendor files that are not for VMs.
+full_treble_only(`
+  neverallow crosvm_vu_fs {
+    vendor_file_type
+    # These types are not required for crosvm, but the access is granted to globally in domain.te
+    # thus should be exempted here.
+    -vendor_cgroup_desc_file
+    -vendor_configs_file
+    -vendor_task_profiles_file
+    -vndk_sp_file
+  }:file *;
+')
+
+# Only allow crosvm_vu_fs to read app data files for clients that can start
+# VMs. Note that the use of app data files is further restricted
+# inside the virtualizationservice by checking the label of all disk
+# image files.
+neverallow crosvm_vu_fs {
+  app_data_file_type
+}:file read;
+
+neverallow crosvm_vu_fs { domain -crash_dump }:process transition;

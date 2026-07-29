@@ -64,6 +64,7 @@ dontaudit gmscore_app { wifi_prop wifi_hal_prop }:file r_file_perms;
 dontaudit gmscore_app mirror_data_file:dir search;
 dontaudit gmscore_app mnt_vendor_file:dir search;
 dontaudit gmscore_app system_adbd_prop:file r_file_perms;
+dontaudit gmscore_app adbd_prop:file r_file_perms;
 
 # Access the network
 net_domain(gmscore_app)
@@ -142,7 +143,7 @@ unix_socket_connect(gmscore_app, aconfigd_mainline, aconfigd_mainline);
 allow gmscore_app anr_data_file:file r_file_perms;
 
 # b/148974132: com.android.vending needs this
-allow gmscore_app priv_app:tcp_socket { read write };
+allow gmscore_app priv_app_all:tcp_socket { read write };
 
 # b/168059475 Allow GMSCore to read Virtual AB properties to determine
 # if device supports VAB.

@@ -226,6 +226,13 @@ func (c *policyConf) enforceDebugfsRestrictions(ctx android.ModuleContext) strin
 	return strconv.FormatBool(ctx.DeviceConfig().BuildDebugfsRestrictionsEnabled())
 }
 
+func (c *policyConf) restrictAshmemUsage(ctx android.ModuleContext) string {
+	if c.cts() {
+		return "cts"
+	}
+	return strconv.FormatBool(ctx.DeviceConfig().RestrictsAshmemUsage())
+}
+
 func (c *policyConf) mlsCats() int {
 	return proptools.IntDefault(c.properties.Mls_cats, MlsCats)
 }
@@ -246,11 +253,23 @@ func findPolicyConfOrder(name string) int {
 func (c *policyConf) transformPolicyToConf(ctx android.ModuleContext) android.OutputPath {
 	conf := pathForModuleOut(ctx, c.stem())
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 
 	srcs := android.PathsForModuleSrc(ctx, c.properties.Srcs)
 	sort.SliceStable(srcs, func(x, y int) bool {
 		return findPolicyConfOrder(srcs[x].Base()) < findPolicyConfOrder(srcs[y].Base())
 	})
+
+	// Policy files may not all end with a new line. This will be an issue
+	// when concatenating them in the next step. Create a "newline" file
+	// and insert it between each source file.
+	newlineFile := android.PathForModuleOut(ctx, "newline")
+	rule.Command().Text("echo").FlagWithOutput("> ", newlineFile)
+	rule.Temporary(newlineFile)
+	var srcsWithNewline android.Paths
+	for _, src := range srcs {
+		srcsWithNewline = append(srcsWithNewline, src, newlineFile)
+	}
 
 	flags := c.getBuildFlags(ctx)
 	rule.Command().Tool(ctx.Config().PrebuiltBuildTool(ctx, "m4")).
@@ -271,10 +290,11 @@ func (c *policyConf) transformPolicyToConf(ctx android.ModuleContext) android.Ou
 		FlagWithArg("-D target_requires_insecure_execmem_for_swiftshader=", strconv.FormatBool(ctx.DeviceConfig().RequiresInsecureExecmemForSwiftshader())).
 		FlagWithArg("-D target_enforce_debugfs_restriction=", c.enforceDebugfsRestrictions(ctx)).
 		FlagWithArg("-D target_recovery=", strconv.FormatBool(c.isTargetRecovery())).
+		FlagWithArg("-D target_restricts_ashmem_usage=", c.restrictAshmemUsage(ctx)).
 		Flag(boardApiLevelToM4Macro(ctx, c.properties.Board_api_level)).
 		Flags(flagsToM4Macros(flags)).
 		Flag("-s").
-		Inputs(srcs).
+		Inputs(srcsWithNewline).
 		Text("> ").Output(conf)
 
 	if proptools.Bool(c.properties.Only_neverallow_rules) {
@@ -283,12 +303,14 @@ func (c *policyConf) transformPolicyToConf(ctx android.ModuleContext) android.Ou
 			Text(conf.String())  // output (in-place filtering)
 	}
 
+	rule.DeleteTemporaryFiles()
 	rule.Build("conf", "Transform policy to conf: "+ctx.ModuleName())
 	return conf
 }
 
 func (c *policyConf) DepsMutator(ctx android.BottomUpMutatorContext) {
 	c.flagDeps(ctx)
+	ctx.AddHostToolDependencies("sepolicy_filter_neverallow")
 }
 
 func (c *policyConf) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -380,6 +402,7 @@ func (c *policyCil) stem() string {
 func (c *policyCil) compileConfToCil(ctx android.ModuleContext, conf android.Path) android.OutputPath {
 	cil := pathForModuleOut(ctx, c.stem())
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 	checkpolicyCmd := rule.Command().BuiltTool("checkpolicy").
 		Flag("-C"). // Write CIL
 		Flag("-M"). // Enable MLS
@@ -415,7 +438,8 @@ func (c *policyCil) compileConfToCil(ctx android.ModuleContext, conf android.Pat
 			Inputs(android.PathsForModuleSrc(ctx, c.properties.Filter_out)). // Also add cil files which are filtered out
 			Text(cil.String()).
 			FlagWithArg("-o ", os.DevNull).
-			FlagWithArg("-f ", os.DevNull)
+			FlagWithArg("-f ", os.DevNull).
+			Flag("-v")
 
 		if proptools.BoolDefault(c.properties.Ignore_neverallow, ctx.Config().SelinuxIgnoreNeverallows()) {
 			secilcCmd.Flag("-N")
@@ -424,6 +448,10 @@ func (c *policyCil) compileConfToCil(ctx android.ModuleContext, conf android.Pat
 
 	rule.Build("cil", "Building cil for "+ctx.ModuleName())
 	return cil
+}
+
+func (c *policyCil) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("checkpolicy", "build_sepolicy", "secilc")
 }
 
 func (c *policyCil) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -516,6 +544,10 @@ func (c *policyBinary) stem() string {
 	return proptools.StringDefault(c.properties.Stem, c.Name())
 }
 
+func (c *policyBinary) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("secilc", "sepolicy-analyze")
+}
+
 func (c *policyBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if len(c.properties.Srcs) == 0 {
 		ctx.PropertyErrorf("srcs", "must be specified")
@@ -523,6 +555,7 @@ func (c *policyBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 	bin := pathForModuleOut(ctx, c.stem()+"_policy")
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 	secilcCmd := rule.Command().BuiltTool("secilc").
 		Flag("-m").                 // Multiple decls
 		FlagWithArg("-M ", "true"). // Enable MLS

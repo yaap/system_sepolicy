@@ -1,0 +1,10 @@
+# Define the domain for the mmd_setup service
+# mmd_setup service manages the memory tasks like zram setup
+starting_at_board_api(202604, `
+    type mmd_setup, domain;
+    typeattribute mmd_setup coredomain;
+')
+
+# system/sepolicy/public is for vendor-facing type and attribute definitions.
+# DO NOT ADD allow, neverallow, or dontaudit statements here.
+# Instead, add such policy rules to system/sepolicy/private/*.te.

@@ -1,0 +1,116 @@
+divert(-1)
+starting_at_board_api(202604, `
+####################################
+# virtualizationservice_use(domain)
+# Allow domain to create and communicate with a virtual machine using
+# virtualizationservice and virtualizationmanager.
+define(`virtualizationservice_use', `
+type $1_virtualizationmanager, domain, coredomain, virtualizationmanager_domain;
+type $1_virtmgr_crosvm, domain, coredomain, crosvm_domain;
+# Transition to virtualizationmanager when the client executes it.
+domain_auto_trans($1, virtualizationmanager_exec, $1_virtualizationmanager)
+# When virtualizationmanager execs a file with the crosvm_exec label, run it in the crosvm domain.
+domain_auto_trans($1_virtualizationmanager, crosvm_exec, $1_virtmgr_crosvm)
+# virtualizationmanager to be client of secretkeeper HAL. It ferries SecretManagement messages
+# from pVM to HAL.
+hal_client_domain($1_virtualizationmanager, hal_secretkeeper)
+# virtualizationmanager needs to talk to IVmCapabilitiesService HAL to allow specific VMs to
+# issue vendor-private smcs.
+hal_client_domain($1_virtualizationmanager, hal_vm_capabilities);
+# Allow virtualizationmanager to communicate over UDS with the client.
+allow { $1_virtualizationmanager $1_virtmgr_crosvm  } $1:unix_stream_socket { ioctl getattr read write };
+# Let the client pass file descriptors to virtualizationmanager and on to crosvm.
+allow { $1_virtualizationmanager $1_virtmgr_crosvm  } $1:fd use;
+# Let the client use file descriptors created by virtualizationmanager.
+allow $1 $1_virtualizationmanager:fd use;
+# Allow piping console log to the client
+allow { $1_virtualizationmanager $1_virtmgr_crosvm  } $1:fifo_file { ioctl getattr read write };
+# Allow client to read/write vsock created by virtualizationmanager to communicate with the VM
+# that it created. Notice that we do not grant permission to create a vsock;
+# the client can only connect to VMs that it owns.
+allow $1 $1_virtualizationmanager:vsock_socket { getattr getopt read write };
+# Allow client to inspect hypervisor capabilities
+get_prop($1, hypervisor_prop)
+# Allow client to read (but not open) the crashdump provided by virtualizationmanager
+allow $1 virtualizationservice_data_file:file { getattr read };
+# Allow virtualizationmanager to read the path of the client using /proc/{PID}/exe
+allow $1_virtualizationmanager $1:dir search;
+allow $1_virtualizationmanager $1:file read;
+allow $1_virtualizationmanager $1:lnk_file read;
+
+# Allow owner of a VM to kill the VM forcibly, by sending sigkill to the process group
+# where virtmgr is the leader
+allow $1 $1_virtmgr_crosvm :process sigkill;
+is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
+gpu_sphal_use($1_virtmgr_crosvm)
+hal_client_domain($1_virtmgr_crosvm, hal_graphics_allocator)
+') # RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES
+') # virtualizationservice_use
+
+####################################
+# early_virtmgr_use(domain)
+# Allow domain to create and communicate with an early virtual machine using
+# early_virtmgr.
+define(`early_virtmgr_use', `
+type $1_early_virtmgr, domain, coredomain, early_virtmgr_domain;
+type $1_early_virtmgr_crosvm, domain, coredomain, crosvm_domain;
+# Transition to early_virtmgr when the client executes it.
+domain_auto_trans($1, early_virtmgr_exec, $1_early_virtmgr)
+# When early_virtmgr execs a file with the crosvm_exec label, run it in the crosvm domain.
+domain_auto_trans($1_early_virtmgr, crosvm_exec, $1_early_virtmgr_crosvm)
+# Allow early_virtmgr to communicate over UDS with the client.
+allow { $1_early_virtmgr $1_early_virtmgr_crosvm  } $1:unix_stream_socket { ioctl getattr read write };
+# Let the client pass file descriptors to early_virtmgr and on to crosvm.
+allow { $1_early_virtmgr $1_early_virtmgr_crosvm  } $1:fd use;
+allow { $1_early_virtmgr $1_early_virtmgr_crosvm  } $1_tmpfs:file rw_file_perms;
+# Let the client use file descriptors created by early_virtmgr.
+allow $1 $1_early_virtmgr:fd use;
+# Allow piping console log to the client
+allow { $1_early_virtmgr $1_early_virtmgr_crosvm  } $1:fifo_file { ioctl getattr read write };
+# Allow client to read/write vsock created by early_virtmgr to communicate with the VM
+# that it created. Notice that we do not grant permission to create a vsock;
+# the client can only connect to VMs that it owns.
+allow $1 $1_early_virtmgr:vsock_socket { getattr getopt read write };
+# Allow client to inspect hypervisor capabilities
+get_prop($1, hypervisor_prop)
+# Allow early_virtmgr to read the path of the client using /proc/{PID}/exe
+allow $1_early_virtmgr $1:dir search;
+allow $1_early_virtmgr $1:file read;
+allow $1_early_virtmgr $1:lnk_file read;
+# early_virtmgr to be client of secretkeeper HAL. It ferries SecretManagement messages from pVM
+# to HAL.
+hal_client_domain($1_early_virtmgr, hal_secretkeeper)
+') # early_virtmgr_use
+') # starting_at_board_api
+
+####################################
+# aiseal_use(domain)
+# Allow domain to use AiSeal host service to manage AiSeal VMs and communicate
+# with its tenants.
+define(`aiseal_use', `
+# Allow domain to find AiSeal service.
+allow $1 aiseal_host_service:service_manager find;
+binder_call($1, aisealhostservice)
+# Allow host application that owns the tenant in AiSeal VM to read/write
+# vsock created by aisealhostservice. Notice that we do not grant permission
+# to create a vsock; the client can only use established vsock connections
+# provided by AiSeal.
+allow $1 aisealhostservice:vsock_socket { getattr getopt read write };
+# Allow domain to read AiSeal properties.
+get_prop($1, aiseal_prop)
+')
+
+#####################################
+# enforce_ashmem_restriction
+# SELinux rules which apply to devices that restrict ashmem usage.
+# The keyword "cts" is used to insert markers to only CTS test the neverallows
+# added by the macro for devices conforming to VSR API level 202604 and newer.
+#
+define(`enforce_ashmem_restriction', ifelse(target_restricts_ashmem_usage, `true', $1,
+ifelse(target_restricts_ashmem_usage, `cts',
+# BEGIN_LAUNCHING_WITH_VSR_202604_ONLY -- this marker is used by CTS -- do not modify
+$1
+# END_LAUNCHING_WITH_VSR_202604_ONLY -- this marker is used by CTS -- do not modify
+, )))
+
+divert(0)

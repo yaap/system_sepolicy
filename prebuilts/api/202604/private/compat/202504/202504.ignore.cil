@@ -1,0 +1,43 @@
+;; new_objects - a collection of types that have been introduced with ToT policy
+;;   that have no analogue in 202504 policy.  Thus, we do not need to map these types to
+;;   previous ones.  Add here to pass checkapi tests.
+(type new_objects)
+(typeattribute new_objects)
+(typeattributeset new_objects
+  ( new_objects
+    aisealhostservice
+    aiseal_data_file
+    binderfs_logs_state_hashed
+    hal_bluetooth_lpp_service
+    hal_frp_service
+    hal_npu_scheduling_service
+    hal_timestamp_service
+    hal_motioncontext_service
+    init_dev_config
+    init_dev_config_exec
+    mmd_config_prop
+    native_serial_service
+    pbtombstone_exec
+    personal_context_service
+    prefetch
+    task_continuity_service
+    trusty_coverage_prop
+    omapi
+    omapi_exec
+    omapi_server
+    npu_service
+    serialservice
+    serialservice_exec
+    sysfs_suspend_params
+    usb_disable_when_locked_prop
+    usb_userspace_aoa_enabled_prop
+    vendor_dma_heap_config_file
+    virtualizationservice_data_file
+    wallet_prop
+    anomaly_detector_service
+    remote_prov_prop
+    wifi_vendor_user_data_file
+    wpa_user_data_file
+    mmd_setup
+    contextual_mode_service
+  ))

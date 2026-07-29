@@ -9,6 +9,7 @@ genfscon proc /buddyinfo u:object_r:proc_buddyinfo:s0
 genfscon proc /cgroups u:object_r:proc_cgroups:s0
 genfscon proc /cmdline u:object_r:proc_cmdline:s0
 genfscon proc /config.gz u:object_r:config_gz:s0
+genfscon proc /consoles u:object_r:proc_consoles:s0
 genfscon proc /cpu/alignment u:object_r:proc_cpu_alignment:s0
 genfscon proc /device-tree/avf u:object_r:proc_dt_avf:s0
 genfscon proc /diskstats u:object_r:proc_diskstats:s0
@@ -46,6 +47,7 @@ genfscon proc /sys/fs/pipe-max-size u:object_r:proc_pipe_conf:s0
 genfscon proc /sys/fs/protected_hardlinks u:object_r:proc_security:s0
 genfscon proc /sys/fs/protected_symlinks u:object_r:proc_security:s0
 genfscon proc /sys/fs/suid_dumpable u:object_r:proc_security:s0
+genfscon proc /sys/kernel/android_bpf_ u:object_r:proc_bpf:s0
 genfscon proc /sys/kernel/bpf_ u:object_r:proc_bpf:s0
 genfscon proc /sys/kernel/core_pattern u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/core_pipe_limit u:object_r:usermodehelper:s0
@@ -125,9 +127,11 @@ genfscon cgroup2 / u:object_r:cgroup_v2:s0
 genfscon sysfs / u:object_r:sysfs:s0
 genfscon sysfs /bus/thunderbolt/devices           u:object_r:sysfs_thunderbolt:s0
 genfscon sysfs /bus/usb/devices                   u:object_r:sysfs_usb:s0
+genfscon sysfs /module/usbcore/parameters/authorized_default u:object_r:sysfs_usbcore:s0
 genfscon sysfs /devices/cs_etm                    u:object_r:sysfs_devices_cs_etm:s0
 genfscon sysfs /devices/system/cpu u:object_r:sysfs_devices_system_cpu:s0
 genfscon sysfs /class/android_usb                 u:object_r:sysfs_android_usb:s0
+genfscon sysfs /class/block                       u:object_r:sysfs_block:s0
 genfscon sysfs /class/extcon                      u:object_r:sysfs_extcon:s0
 genfscon sysfs /class/gpu                         u:object_r:sysfs_gpu:s0
 genfscon sysfs /class/leds                        u:object_r:sysfs_leds:s0
@@ -175,7 +179,6 @@ genfscon sysfs /power/wake_unlock u:object_r:sysfs_wake_lock:s0
 genfscon sysfs /kernel/btf u:object_r:sysfs_btf:s0
 genfscon sysfs /kernel/memory_state_time u:object_r:sysfs_power:s0
 genfscon sysfs /kernel/dma_heap u:object_r:sysfs_dma_heap:s0
-genfscon sysfs /kernel/ion u:object_r:sysfs_ion:s0
 genfscon sysfs /kernel/ipv4 u:object_r:sysfs_ipv4:s0
 genfscon sysfs /kernel/mm/cma u:object_r:sysfs_cma:s0
 genfscon sysfs /kernel/mm/transparent_hugepage u:object_r:sysfs_transparent_hugepage:s0
@@ -189,11 +192,13 @@ genfscon sysfs /module/dm_bufio/parameters/max_age_seconds u:object_r:sysfs_dm_v
 genfscon sysfs /module/dm_verity/parameters/prefetch_cluster u:object_r:sysfs_dm_verity:s0
 genfscon sysfs /module/lowmemorykiller u:object_r:sysfs_lowmemorykiller:s0
 genfscon sysfs /module/tcp_cubic/parameters u:object_r:sysfs_net:s0
+genfscon sysfs /module/suspend/parameters/pm_fs_abort u:object_r:sysfs_suspend_params:s0
 genfscon sysfs /module/wlan/parameters/fwpath u:object_r:sysfs_wlan_fwpath:s0
 genfscon sysfs /devices/virtual/timed_output/vibrator/enable u:object_r:sysfs_vibrator:s0
 genfscon sysfs /devices/virtual/misc/uhid u:object_r:sysfs_uhid:s0
 genfscon sysfs /kernel/vendor_sched u:object_r:sysfs_vendor_sched:s0
 genfscon sysfs /devices/uprobe u:object_r:sysfs_uprobe:s0
+genfscon sysfs /module/libcomposite/parameters/android_kernel_aoa_enabled u:object_r:sysfs_usb:s0
 
 genfscon debugfs /kprobes                             u:object_r:debugfs_kprobes:s0
 genfscon debugfs /mmc0                                u:object_r:debugfs_mmc:s0
@@ -237,6 +242,8 @@ genfscon tracefs /events/ext4/ext4_sync_file_enter/          u:object_r:debugfs_
 genfscon tracefs /events/ext4/ext4_sync_file_exit/           u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/block/block_rq_issue/               u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/block/block_rq_complete/            u:object_r:debugfs_tracing:s0
+genfscon tracefs /events/lock/contention_begin/              u:object_r:debugfs_tracing:s0
+genfscon tracefs /events/lock/contention_end/                u:object_r:debugfs_tracing:s0
 
 genfscon tracefs /synthetic_events                                       u:object_r:debugfs_tracing:s0
 
@@ -260,6 +267,7 @@ genfscon tracefs /events/sched/sched_process_exit/                       u:objec
 genfscon tracefs /events/sched/sched_process_free/                       u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/sched/sched_pi_setprio/                         u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/cgroup/                                         u:object_r:debugfs_tracing:s0
+genfscon tracefs /events/devfreq/devfreq_frequency/                      u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/cpu_frequency/                            u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/cpu_idle/                                 u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/clock_enable/                             u:object_r:debugfs_tracing:s0
@@ -268,6 +276,7 @@ genfscon tracefs /events/power/clock_set_rate/                           u:objec
 genfscon tracefs /events/power/cpu_frequency_limits/                     u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/gpu_frequency/                            u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/gpu_work_period/                          u:object_r:debugfs_tracing:s0
+genfscon tracefs /events/power/gpu_power_state/                          u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/power/suspend_resume/                           u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/cpufreq_interactive/                            u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/vmscan/mm_vmscan_direct_reclaim_begin/          u:object_r:debugfs_tracing:s0
@@ -290,11 +299,9 @@ genfscon tracefs /events/fence/                                          u:objec
 genfscon tracefs /events/dma_fence/                                      u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/filemap/mm_filemap_add_to_page_cache/           u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/filemap/mm_filemap_delete_from_page_cache/      u:object_r:debugfs_tracing:s0
+genfscon tracefs /events/kmem/dmabuf_rss_stat/                           u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/kmem/rss_stat/                                  u:object_r:debugfs_tracing:s0
-genfscon tracefs /events/kmem/ion_heap_grow/                             u:object_r:debugfs_tracing:s0
-genfscon tracefs /events/kmem/ion_heap_shrink/                           u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/kmem/mm_calculate_totalreserve_pages/           u:object_r:debugfs_tracing:s0
-genfscon tracefs /events/ion/ion_stat/                                   u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/mm_event/mm_event_record/                       u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/oom/oom_score_adj_update/                       u:object_r:debugfs_tracing:s0
 genfscon tracefs /events/oom/mark_victim/                                u:object_r:debugfs_tracing:s0
@@ -316,18 +323,22 @@ genfscon tracefs /events/clk/clk_set_rate/                               u:objec
 genfscon debugfs /kcov								 u:object_r:debugfs_kcov:s0
 
 genfscon securityfs / u:object_r:securityfs:s0
+genfscon securityfs /safesetid/uid_allowlist_policy u:object_r:uid_allowlist_policy:s0
 
 genfscon binder /binder u:object_r:binder_device:s0
 genfscon binder /hwbinder u:object_r:hwbinder_device:s0
 genfscon binder /vndbinder u:object_r:vndbinder_device:s0
 genfscon binder /binder_logs u:object_r:binderfs_logs:s0
 genfscon binder /binder_logs/proc u:object_r:binderfs_logs_proc:s0
+genfscon binder /binder_logs/state_hashed u:object_r:binderfs_logs_state_hashed:s0
 genfscon binder /binder_logs/stats u:object_r:binderfs_logs_stats:s0
 genfscon binder /binder_logs/transactions u:object_r:binderfs_logs_transactions:s0
 genfscon binder /binder_logs/transactions_hashed u:object_r:binderfs_logs_transaction_history:s0
 genfscon binder /binder_logs/transaction_log u:object_r:binderfs_logs_transaction_history:s0
 genfscon binder /binder_logs/failed_transaction_log u:object_r:binderfs_logs_transaction_history:s0
 genfscon binder /features u:object_r:binderfs_features:s0
+
+genfscon sysfs /module/binder/parameters/impl u:object_r:sysfs_binder_impl:s0
 
 genfscon inotifyfs / u:object_r:inotify:s0
 genfscon vfat / u:object_r:vfat:s0
@@ -346,12 +357,15 @@ genfscon binfmt_misc / u:object_r:binfmt_miscfs:s0
 
 genfscon bpf / u:object_r:fs_bpf:s0
 genfscon bpf /cputimeinstate u:object_r:fs_bpf_cputimeinstate:s0
+genfscon bpf /dmabuf u:object_r:fs_bpf_dmabuf:s0
+genfscon bpf /kernelwakelockduration u:object_r:fs_bpf_kernelwakelockduration:s0
 genfscon bpf /loader u:object_r:fs_bpf_loader:s0
+genfscon bpf /lock_contention u:object_r:fs_bpf_lock_contention:s0
 genfscon bpf /memevents u:object_r:fs_bpf_memevents:s0
 genfscon bpf /net_private u:object_r:fs_bpf_net_private:s0
 genfscon bpf /net_shared u:object_r:fs_bpf_net_shared:s0
 genfscon bpf /netd_readonly u:object_r:fs_bpf_netd_readonly:s0
 genfscon bpf /netd_shared u:object_r:fs_bpf_netd_shared:s0
 genfscon bpf /tethering u:object_r:fs_bpf_tethering:s0
-genfscon bpf /vendor u:object_r:fs_bpf_vendor:s0
 genfscon bpf /uprobestats u:object_r:fs_bpf_uprobestats:s0
+genfscon bpf /vendor u:object_r:fs_bpf_vendor:s0

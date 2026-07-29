@@ -1,0 +1,2 @@
+# Allows CHRE HAL init.*.rc config to set properties.
+set_prop(vendor_init, vendor_chre_hal_prop)

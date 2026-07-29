@@ -1,0 +1,37 @@
+# Inherit the definitions from public
+type aoad, domain, coredomain;
+type aoad_exec, system_file_type, exec_type, file_type;
+#typeattribute aoad coredomain;
+
+# Init launch
+init_daemon_domain(aoad)
+
+binder_call(aoad, system_server)
+
+# Binder communication (Critical for Java)
+binder_use(aoad)
+add_service(aoad, aoad_service)
+
+# USB FunctionFs Access
+allow aoad functionfs:dir search;
+allow aoad functionfs:file rw_file_perms;
+
+# USB State Access
+allow aoad sysfs_android_usb:dir search;
+allow aoad sysfs_android_usb:file r_file_perms;
+
+# Allow access to UHID for AOA HID support
+allow aoad uhid_device:chr_file rw_file_perms;
+
+# --- SELinux Utils (restorecon checks) ---
+allow aoad selinuxfs:file r_file_perms;
+allow aoad file_contexts_file:file r_file_perms;
+
+# Allow R/W on 'functionfs' AND the ability to change its label (relabelfrom)
+allow aoad functionfs:file { rw_file_perms relabelfrom };
+
+# Allow R/W on 'usbaccessory_device' AND the ability to finish relabeling (relabelto)
+allow aoad usbaccessory_device:file { rw_file_perms relabelto };
+
+allowxperm aoad usbaccessory_device:file ioctl { FUNCTIONFS_ENDPOINT_DESC };
+allow usbaccessory_device functionfs:filesystem associate;

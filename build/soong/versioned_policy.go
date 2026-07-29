@@ -82,7 +82,13 @@ func (m *versionedPolicy) installable() bool {
 }
 
 func (m *versionedPolicy) DepsMutator(ctx android.BottomUpMutatorContext) {
-	// do nothing
+	ctx.AddHostToolDependencies("version_policy")
+	if len(m.properties.Filter_out) > 0 || proptools.String(m.properties.Target_policy) != "" {
+		ctx.AddHostToolDependencies("build_sepolicy")
+	}
+	if len(m.properties.Dependent_cils) > 0 {
+		ctx.AddHostToolDependencies("secilc")
+	}
 }
 
 func (m *versionedPolicy) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -104,16 +110,12 @@ func (m *versionedPolicy) GenerateAndroidBuildActions(ctx android.ModuleContext)
 
 	out := pathForModuleOut(ctx, stem)
 	rule := android.NewRuleBuilder(pctx, ctx)
+	rule.SandboxDisabled()
 
 	if proptools.String(m.properties.Base) == "" {
 		ctx.PropertyErrorf("base", "must be specified")
 		return
 	}
-
-	versionCmd := rule.Command().BuiltTool("version_policy").
-		FlagWithInput("-b ", android.PathForModuleSrc(ctx, *m.properties.Base)).
-		FlagWithArg("-n ", version).
-		FlagWithOutput("-o ", out)
 
 	if proptools.Bool(m.properties.Mapping) && proptools.String(m.properties.Target_policy) != "" {
 		ctx.ModuleErrorf("Can't set both mapping and target_policy")
@@ -121,9 +123,39 @@ func (m *versionedPolicy) GenerateAndroidBuildActions(ctx android.ModuleContext)
 	}
 
 	if proptools.Bool(m.properties.Mapping) {
-		versionCmd.Flag("-m")
+		rule.Command().BuiltTool("version_policy").
+			FlagWithInput("-b ", android.PathForModuleSrc(ctx, *m.properties.Base)).
+			FlagWithArg("-n ", version).
+			FlagWithOutput("-o ", out).
+			Flag("-m")
 	} else if target := proptools.String(m.properties.Target_policy); target != "" {
-		versionCmd.FlagWithInput("-t ", android.PathForModuleSrc(ctx, target))
+		mapping := pathForModuleOut(ctx, stem+".mapping.cil")
+		rule.Command().BuiltTool("version_policy").
+			FlagWithInput("-b ", android.PathForModuleSrc(ctx, *m.properties.Base)).
+			FlagWithArg("-n ", version).
+			FlagWithOutput("-o ", mapping).
+			Flag("-m")
+		rule.Temporary(mapping)
+
+		attributized := pathForModuleOut(ctx, stem+".attributized.cil")
+		rule.Command().BuiltTool("version_policy").
+			FlagWithInput("-b ", android.PathForModuleSrc(ctx, *m.properties.Base)).
+			FlagWithArg("-n ", version).
+			FlagWithInput("-t ", android.PathForModuleSrc(ctx, target)).
+			FlagWithOutput("-o ", attributized)
+		rule.Temporary(attributized)
+
+		rule.Command().BuiltTool("build_sepolicy").
+			Text("filter_out").
+			Flag("-f").
+			Input(mapping).
+			FlagWithOutput("-t ", attributized)
+
+		rule.Command().Text("cat").
+			Input(mapping).
+			Input(attributized).
+			Text("> ").
+			Output(out)
 	} else {
 		ctx.ModuleErrorf("Either mapping or target_policy must be set")
 		return
@@ -147,7 +179,8 @@ func (m *versionedPolicy) GenerateAndroidBuildActions(ctx android.ModuleContext)
 			Inputs(android.PathsForModuleSrc(ctx, m.properties.Dependent_cils)).
 			Text(out.String()).
 			FlagWithArg("-o ", os.DevNull).
-			FlagWithArg("-f ", os.DevNull)
+			FlagWithArg("-f ", os.DevNull).
+			Flag("-v")
 	}
 
 	rule.Build("mapping", "Versioning mapping file "+ctx.ModuleName())

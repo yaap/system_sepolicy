@@ -47,7 +47,7 @@ class GenerateKeys(object):
 
                 inCert = True
 
-            # Are we ending the ceritifcate?
+            # Are we ending the certificate?
             elif line == "-----END CERTIFICATE-----":
                 if not inCert:
                     sys.exit("Encountered END CERTIFICATE before BEGIN CERTIFICATE on line: "
@@ -58,7 +58,7 @@ class GenerateKeys(object):
 
                 # Check the input
                 if len(base64Key) == 0:
-                    sys.exit("Empty certficate , certificate "+ str(certNo) + " found in file: "
+                    sys.exit("Empty certificate , certificate "+ str(certNo) + " found in file: "
                             + path)
 
                 # ... and append the certificate to the list
@@ -83,7 +83,7 @@ class GenerateKeys(object):
                     sys.exit("Detected erroneous line \""+ line + "\" on " + str(lineNo)
                         + " in pem file: " + path)
 
-            # else we have started the certicate and need to append the data
+            # else we have started the certificate and need to append the data
             elif inCert:
                 base64Key += line
 
@@ -213,8 +213,8 @@ if __name__ == "__main__":
 
     usage  = "usage: %prog [options] CONFIG_FILE MAC_PERMISSIONS_FILE [MAC_PERMISSIONS_FILE...]\n"
     usage += "This tool allows one to configure an automatic inclusion\n"
-    usage += "of signing keys into the mac_permision.xml file(s) from the\n"
-    usage += "pem files. If mulitple mac_permision.xml files are included\n"
+    usage += "of signing keys into the mac_permissions.xml file(s) from the\n"
+    usage += "pem files. If multiple mac_permissions.xml files are included\n"
     usage += "then they are unioned to produce a final version."
 
     version = "%prog " + str(__VERSION)

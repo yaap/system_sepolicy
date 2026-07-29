@@ -1,0 +1,42 @@
+# aflags -- tool to read and write aconfig flags
+type aflags, domain, coredomain;
+type aflags_exec, system_file_type, exec_type, file_type;
+
+# Allow execution of aflags itself
+allow aflags aflags_exec:file rx_file_perms;
+
+# Support execution and output via adb, shell, or background tracers
+allow aflags { adbd dumpstate shell su traced_probes }:fd use;
+allow aflags { adbd dumpstate shell su traced_probes }:fifo_file rw_file_perms;
+allow aflags adbd:unix_stream_socket { read write };
+allow aflags devpts:chr_file rw_file_perms;
+
+# Talk to aconfigd and aconfigd-mainline for flag states and overrides
+unix_socket_connect(aflags, aconfigd, aconfigd)
+unix_socket_connect(aflags, aconfigd_mainline, aconfigd_mainline)
+
+# Read flag definitions and storage files from partitions, APEXes, and /metadata
+allow aflags metadata_file:dir search;
+r_dir_file(aflags, aconfig_storage_metadata_file)
+r_dir_file(aflags, apex_mnt_dir)
+use_apex_info(aflags)
+r_dir_file(aflags, { system_aconfig_storage_file vendor_aconfig_storage_file })
+
+# Legacy DeviceConfig support via /system/bin/device_config
+allow aflags { shell_exec device_config_exec toolbox_exec }:file rx_file_perms;
+
+# Allow executing /system/bin/cmd to invoke device_config
+allow aflags system_file:file execute_no_trans;
+
+# Binder communication for legacy flag support
+binder_use(aflags)
+binder_call(aflags, system_server)
+binder_call(system_server, aflags)
+allow aflags {
+    device_config_service
+    device_config_updatable_service
+}:service_manager find;
+
+# Allow system_server to return command output via FDs and pipes passed by aflags
+allow system_server aflags:fd use;
+allow system_server aflags:fifo_file rw_file_perms;

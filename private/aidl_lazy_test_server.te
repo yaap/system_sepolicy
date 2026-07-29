@@ -1,6 +1,9 @@
 userdebug_or_eng(`
   typeattribute aidl_lazy_test_server coredomain;
 
+  # Exempt userdebug-only coredomains from Treble labeling tests (b/493040969)
+  typeattribute aidl_lazy_test_server treble_labeling_violators;
+
   init_daemon_domain(aidl_lazy_test_server)
 
   binder_use(aidl_lazy_test_server)

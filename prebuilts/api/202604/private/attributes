@@ -1,0 +1,63 @@
+hal_attribute(lazy_test);
+
+# This is applied to apps on vendor images with SDK <=30 only,
+# to exempt them from recent mls changes. It must not be applied
+# to any domain on newer system or vendor image.
+attribute mlsvendorcompat;
+
+# Attributes for property types having both system_property_type
+# and vendor_property_type. Such types are ill-formed because
+# property owner attributes must be exclusive.
+attribute system_and_vendor_property_type;
+expandattribute system_and_vendor_property_type false;
+
+# All SDK sandbox domains
+attribute sdk_sandbox_all;
+# The SDK sandbox domains for the current SDK level.
+attribute sdk_sandbox_current;
+# Common to adbd and adbd_tradeinmode.
+attribute adbd_common;
+
+# Provides access to platform update services.
+# WARNING: USING THE update_provider ATTRIBUTE WILL CAUSE CTS TO FAIL!
+attribute update_provider;
+expandattribute update_provider false;
+
+# Temporary attribute to allow the app-based or native service implementation
+# of the OMAPI services. Remove once the RELEASE_NATIVE_OMAPI flag is cleaned
+# up and the app-based implementation is removed.
+attribute omapi_server;
+
+until_board_api(202604, `
+attribute treble_labeling_violators;
+expandattribute treble_labeling_violators false;
+
+attribute mapper_sphal_domain;
+expandattribute mapper_sphal_domain false;
+
+attribute gpu_sphal_domain;
+expandattribute gpu_sphal_domain false;
+
+hal_attribute(bluetooth_lpp);
+hal_attribute(motioncontext);
+') # until_board_api(202604)
+
+until_board_api(202604, `
+attribute virtualizationmanager_domain;
+attribute early_virtmgr_domain;
+') # until_board_api(202604)
+
+until_board_api(202604, `
+attribute priv_app_all;
+attribute platform_app_all;
+') # until_board_api(202604)
+
+until_board_api(202604, `
+attribute crosvm_domain;
+') # until_board_api(202604)
+
+until_board_api(202604, `
+# HALs that use wrapfds should use this attribute
+attribute wrapfd_hal_domain;
+expandattribute wrapfd_hal_domain false;
+') # until_board_api(202604)

@@ -15,6 +15,8 @@ allow hal_drm self:process execmem;
 get_prop(hal_drm_server, serialno_prop)
 # Permit reading force L3 system property
 get_prop(hal_drm_server, drm_forcel3_prop)
+# Permit reading drm service config system property
+get_prop(hal_drm_server, drm_service_config_prop)
 
 # Read files already opened under /data
 allow hal_drm system_data_file:file { getattr read };
@@ -32,8 +34,6 @@ allow hal_drm cgroup_v2:file w_file_perms;
 allow hal_drm_server shell:fd use;
 allow hal_drm_server shell:fifo_file write;
 
-# Allow access to ion memory allocation device
-allow { hal_drm -hal_widevine_system } ion_device:chr_file rw_file_perms;
 allow hal_drm hal_graphics_allocator:fd use;
 
 # Allow access to hidl_memory allocation service

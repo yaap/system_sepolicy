@@ -17,6 +17,31 @@ allow microdroid_manager vd_device:blk_file rw_file_perms;
 # microdroid_manager verifies DM-verity mounted APK payload
 allow microdroid_manager dm_device:blk_file r_file_perms;
 
+# Allow microdroid_manager to set up loop-back devices.
+allow microdroid_manager loop_control_device:chr_file rw_file_perms;
+allow microdroid_manager loop_device:blk_file rw_file_perms;
+allowxperm microdroid_manager loop_device:blk_file ioctl {
+  LOOP_CLR_FD
+  LOOP_CONFIGURE
+  LOOP_CTL_GET_FREE
+};
+
+# Allow microdroid_manager to create dm-crypt devices.
+allow microdroid_manager dm_device:chr_file rw_file_perms;
+allow microdroid_manager dm_device:blk_file rw_file_perms;
+allow microdroid_manager self:global_capability_class_set sys_admin;
+
+# Allow microdroid_manager to mount encrypted assets.
+allow microdroid_manager tmpfs:dir { create mounton add_name write };
+allow microdroid_manager labeledfs:filesystem { relabelfrom };
+allow microdroid_manager encrypted_assets_fs:filesystem { mount unmount relabelfrom relabelto };
+allow microdroid_manager encrypted_assets_file:dir { create mounton getattr };
+
+# Allow microdroid_manager to read the status of netlink sockets and determine whether ueventd is
+# ready for processing the mount events.
+# TODO(b/455543595): Have a better ueventd readiness signal to eliminate procfs parsing.
+r_dir_file(microdroid_manager, proc_net_type)
+
 # microdroid_manager can query AVF flags in the device tree
 r_dir_file(microdroid_manager, proc_dt_avf)
 r_dir_file(microdroid_manager, sysfs_dt_avf)
@@ -47,7 +72,7 @@ allow microdroid_manager self:global_capability_class_set sys_admin;
 
 # microdroid_manager needs to adjust the priority of the payload process.
 # It requires the sys_nice cap as well.
-allow microdroid_manager microdroid_app:process setsched;
+allow microdroid_manager microdroid_payload:process setsched;
 allow microdroid_manager self:global_capability_class_set sys_nice;
 
 # Allow microdroid_manager to remove capabilities from it's capability bounding set.
@@ -66,7 +91,11 @@ domain_auto_trans(microdroid_manager, zipfuse_exec, zipfuse)
 domain_auto_trans(microdroid_manager, encryptedstore_exec, encryptedstore)
 
 # Microdroid Manager needs read related permission for syncing encrypted storage fs
-allow microdroid_manager encryptedstore_file:dir r_dir_perms;
+# Also microdroid manager creates the ce store folders
+allow microdroid_manager encryptedstore_file:dir create_dir_perms;
+
+# Microdroid Manager needs to be able to clean up encrypted store per user folders
+allow microdroid_manager encryptedstore_file:file unlink;
 
 # Allow microdroid_manager to run kexec to load crashkernel
 domain_auto_trans(microdroid_manager, kexec_exec, kexec)
@@ -84,6 +113,12 @@ allow microdroid_manager self:vsock_socket { listen accept };
 # Allow microdroid_manager to read the CID of the VM.
 allow microdroid_manager vsock_device:chr_file { ioctl open read };
 
+# Allow microdroid_manager to perform socket-related operations in the microdroid_managed directory.
+allow microdroid_manager microdroid_managed_socket_dir:dir create_dir_perms;
+
+# Allow microdroid_manager to create the unix socket file.
+allow microdroid_manager microdroid_managed_socket_dir:sock_file create_file_perms;
+
 # microdroid_manager is using bootstrap bionic
 use_bootstrap_libs(microdroid_manager)
 
@@ -97,7 +132,9 @@ set_prop(microdroid_manager, ctl_apexd_vm_prop)
 set_prop(microdroid_manager, ctl_apkdmverity_prop)
 set_prop(microdroid_manager, ctl_authfs_prop)
 set_prop(microdroid_manager, ctl_seriallogging_prop)
+set_prop(microdroid_manager, ctl_ueventd_prop)
 set_prop(microdroid_manager, ctl_zipfuse_prop)
+set_prop(microdroid_manager, ctl_adbd_prop)
 
 # Allow microdroid_manager to set servicemanager.ready once it starts the IServiceManager service
 set_prop(microdroid_manager, servicemanager_prop)
@@ -121,6 +158,10 @@ set_prop(microdroid_manager, microdroid_lifecycle_prop)
 set_prop(microdroid_manager, powerctl_prop)
 
 set_prop(microdroid_manager, pageout_bomb_prop)
+
+# microdroid_manager needs to query `init_debug_policy.adbd.enabled` to check if adbd is allowed
+# to be started.
+get_prop(microdroid_manager, init_debug_policy_prop)
 
 # Allow microdroid_manager to read bootconfig so that it can reject a bootconfig
 # that is different from what is recorded in the instance.img file.
@@ -172,6 +213,10 @@ get_prop(microdroid_manager, microdroid_encrypted_store_status_prop);
 # that it can setup encrypted store per payload request.
 get_prop(microdroid_manager, microdroid_encrypted_store_setup_prop);
 
+# Allow microdroid_manager to read the service status, so it can determine whether
+# ueventd is running.
+get_prop(microdroid_manager, init_service_status_private_prop);
+
 # Allow microdroid_manager to read /proc/*/maps for dump
 r_dir_file(microdroid_manager, domain)
 allow microdroid_manager self:global_capability_class_set sys_ptrace;
@@ -199,6 +244,24 @@ allow microdroid_manager {
 # Allow microdroid_manager to start & stop traced_relay service by setting
 # persist.traced.enable sysprop.
 set_prop(microdroid_manager, traced_enabled_prop);
+
+# For multitenant Microdroid configurations, microdroid setexeccon the forked
+# child process into set of allowed domains.
+allow microdroid_manager self:process setexec;
+domain_trans(microdroid_manager, microdroid_app_exec, appsearch_tenant);
+domain_trans(microdroid_manager, microdroid_app_exec, aiseal_agent_tenant);
+
+# For credential encrypted storage, allow use of file encryption ioclts
+allowxperm microdroid_manager encryptedstore_file:dir ioctl {
+  FS_IOC_GET_ENCRYPTION_POLICY
+  FS_IOC_GET_ENCRYPTION_POLICY_EX
+  FS_IOC_SET_ENCRYPTION_POLICY
+  FS_IOC_ADD_ENCRYPTION_KEY
+  FS_IOC_REMOVE_ENCRYPTION_KEY
+  FS_IOC_GET_ENCRYPTION_KEY_STATUS
+};
+
+allow microdroid_manager microdroid_manager:key { write search setattr };
 
 # Domains other than microdroid can't write extra_apks
 neverallow { domain -microdroid_manager -init -vendor_init } extra_apk_file:file no_w_file_perms;

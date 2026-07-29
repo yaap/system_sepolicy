@@ -182,7 +182,7 @@ se_policy_conf {
 }
 
 se_policy_cil {
-    name: "microdroid_vendor_sepolicy.cil.raw",
+    name: "microdroid_vendor_sepolicy.unversioned.cil",
     src: ":microdroid_vendor_sepolicy.conf",
     filter_out: [":microdroid_reqd_policy_mask.cil"],
     secilc_check: false, // will be done in se_versioned_policy module
@@ -193,7 +193,7 @@ se_versioned_policy {
     name: "microdroid_vendor_sepolicy.cil",
     stem: "vendor_sepolicy.cil",
     base: ":microdroid_plat_pub_policy.cil",
-    target_policy: ":microdroid_vendor_sepolicy.cil.raw",
+    target_policy: ":microdroid_vendor_sepolicy.unversioned.cil",
     version: "current", // microdroid is bundled to system
     dependent_cils: [
         ":microdroid_plat_sepolicy.cil",

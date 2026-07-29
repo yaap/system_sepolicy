@@ -1,0 +1,4 @@
+# Properties used only in /vendor
+
+# Properties used in CHRE HAL implementations
+vendor_internal_prop(vendor_chre_hal_prop)

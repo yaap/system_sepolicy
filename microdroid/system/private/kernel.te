@@ -79,6 +79,9 @@ allow kernel { sdcard_type fuse }:file { read write };
 # a kernel thread in earlier kernel version.
 allow kernel apexd:fd use;
 
+# Allow the kernel to mount the encrypted assets onto a loopback device.
+allow kernel microdroid_manager:fd use;
+
 #-----------------------------------------
 allow kernel apkdmverity:fd use;
 

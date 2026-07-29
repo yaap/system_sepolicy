@@ -163,6 +163,13 @@ filegroup {
 }
 
 filegroup {
+    name: "com.android.npumanager-file_contexts",
+    srcs: [
+        "com.android.npumanager-file_contexts",
+    ],
+}
+
+filegroup {
     name: "com.android.os.statsd-file_contexts",
     srcs: [
         "com.android.os.statsd-file_contexts",
@@ -354,5 +361,19 @@ filegroup {
     name: "com.google.android.gmssystem-file_contexts",
     srcs: [
         "com.google.android.gmssystem-file_contexts",
+    ],
+}
+
+filegroup {
+    name: "com.android.webapp-file_contexts",
+    srcs: [
+        "com.android.webapp-file_contexts",
+    ],
+}
+
+filegroup {
+    name: "com.android.bettertogether-file_contexts",
+    srcs: [
+        "com.android.bettertogether-file_contexts",
     ],
 }

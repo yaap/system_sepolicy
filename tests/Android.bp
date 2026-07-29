@@ -38,6 +38,7 @@ python_library_host {
     srcs: [
         "fc_sort.py",
         "policy.py",
+        "utils.py",
     ],
 }
 
@@ -98,7 +99,7 @@ python_binary_host {
         "searchpolicy.py",
     ],
     libs: ["pysepolwrap"],
-    required: ["libsepolwrap"],
+    data: [":libsepolwrap"],
 }
 
 python_binary_host {
@@ -148,6 +149,7 @@ python_test_host {
         "fc_sort.py",
         "policy.py",
         "policy_test.py",
+        "utils.py",
     ],
     test_options: {
         unit_test: true,
@@ -170,6 +172,7 @@ filegroup {
     srcs: [
         ":202404_sepolicy_cts_data",
         ":202504_sepolicy_cts_data",
+        ":202604_sepolicy_cts_data",
     ],
     visibility: ["//cts/hostsidetests/security"],
 }

@@ -16,6 +16,9 @@
                     "include-filter": "android.security.cts.SELinuxHostTest#testNoBugreportDenials"
                 }
             ]
+        },
+        {
+            "name": "CtsAppSearchTestCases"
         }
     ]
 }

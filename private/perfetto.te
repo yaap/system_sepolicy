@@ -47,8 +47,8 @@ allow perfetto system_perfetto_config_file:file r_file_perms;
 # Allow perfetto to read the trace config from statsd, mm_events and shell
 # (both root and non-root) on stdin and also to write the resulting trace to
 # stdout.
-allow perfetto { statsd mm_events shell su }:fd use;
-allow perfetto { statsd mm_events shell su system_server }:fifo_file { getattr read write ioctl };
+allow perfetto { statsd mm_events shell su pmgd }:fd use;
+allow perfetto { statsd mm_events shell su system_server pmgd }:fifo_file { getattr read write ioctl };
 
 # Allow to communicate use, read and write over the adb connection.
 allow perfetto adbd:fd use;
@@ -93,7 +93,7 @@ neverallow {
   -traced    # For write_into_file traces.
   -dumpstate # For attaching traces to bugreports.
   -incidentd # For receiving reported traces. TODO(lalitm): remove this.
-  -priv_app  # For stating traces for bug-report UI.
+  -priv_app_all  # For stating traces for bug-report UI.
   -system_server # For accessing traces started by profiling apis.
   -trace_redactor # For accessing traces to be redacted.
 } perfetto_traces_data_file:dir *;
@@ -119,34 +119,3 @@ neverallow perfetto dev_type:blk_file { read write };
 
 # ptrace any other process
 neverallow perfetto domain:process ptrace;
-
-# Disallows access to other /data files.
-neverallow perfetto {
-  data_file_type
-  -system_data_file
-  -system_data_root_file
-  -media_userdir_file
-  -system_userdir_file
-  -vendor_userdir_file
-  # TODO(b/72998741) Remove exemption. Further restricted in a subsequent
-  # neverallow. Currently only getattr and search are allowed.
-  -vendor_data_file
-  -perfetto_traces_data_file
-  -perfetto_traces_bugreport_data_file
-  -perfetto_traces_profiling_data_file
-  -perfetto_configs_data_file
-  with_native_coverage(`-method_trace_data_file')
-}:dir *;
-neverallow perfetto {
-  system_data_file
-  -perfetto_traces_data_file
-  -perfetto_traces_profiling_data_file
-}:dir ~{ getattr search };
-neverallow perfetto {
-  data_file_type
-  -perfetto_traces_data_file
-  -perfetto_traces_bugreport_data_file
-  -perfetto_traces_profiling_data_file
-  -perfetto_configs_data_file
-  with_native_coverage(`-method_trace_data_file')
-}:file ~write;

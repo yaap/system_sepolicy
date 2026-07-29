@@ -24,10 +24,13 @@ define(`ipc_class_set', `{ sem msgq shm ipc }')
 #
 define(`x_file_perms', `{ getattr execute execute_no_trans map }')
 define(`r_file_perms', `{ getattr open read ioctl lock map watch watch_reads }')
+define(`r_without_open_file_perms', `{ getattr read ioctl lock map watch watch_reads }')
 define(`w_file_perms', `{ open append write lock map }')
+define(`rw_without_open_file_perms', `{ getattr read ioctl lock map watch watch_reads write append }')
 define(`rx_file_perms', `{ r_file_perms x_file_perms }')
 define(`ra_file_perms', `{ r_file_perms append }')
 define(`rw_file_perms', `{ r_file_perms w_file_perms }')
+define(`rw_no_ioctl_file_perms', `{ getattr open read lock map watch watch_reads w_file_perms }')
 define(`rwx_file_perms', `{ rw_file_perms x_file_perms }')
 define(`create_file_perms', `{ create rename setattr unlink rw_file_perms }')
 

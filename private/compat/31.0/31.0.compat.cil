@@ -1,3 +1,7 @@
 ;; complement CIL file for compatibility between ToT policy and 31.0 vendors.
 ;; will be compiled along with other normal policy files, on 31.0 vendors.
 ;;
+
+;; New system images do not allow open() to work on ashmem for all domains,
+;; so add it for compatibility with older vendor images.
+(allow domain ashmem_libcutils_device (chr_file (open)))

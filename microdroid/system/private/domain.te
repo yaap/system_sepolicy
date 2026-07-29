@@ -41,6 +41,7 @@ allow domain rootfs:lnk_file { read getattr };
 allow domain device:dir search;
 allow domain dev_type:lnk_file r_file_perms;
 allow domain devpts:dir search;
+allow domain microdroid_managed_socket_dir:dir search;
 allow domain socket_device:dir r_dir_perms;
 allow domain owntty_device:chr_file rw_file_perms;
 allow domain null_device:chr_file rw_file_perms;
@@ -320,6 +321,7 @@ neverallow {
   -kernel
   -init
   -ueventd
+  -apexd
 } self:global_capability_class_set mknod;
 
 # No process can map low memory (< CONFIG_LSM_MMAP_MIN_ADDR).

@@ -1,0 +1,31 @@
+# Domain used for casefolding_remover process
+
+# All types must be defined regardless of build variant to ensure
+# policy compilation succeeds with userdebug/user combination at boot
+type casefolding_remover, domain, coredomain;
+
+# File types must be defined for file_contexts.
+type casefolding_remover_exec, system_file_type, exec_type, file_type;
+typeattribute casefolding_remover mlstrustedsubject;
+init_daemon_domain(casefolding_remover)
+
+get_prop(casefolding_remover, storage_config_prop)
+get_prop(casefolding_remover, casefolding_override_prop)
+set_prop(casefolding_remover, casefolding_status_prop)
+
+allow casefolding_remover casefolding_remover:capability { dac_override chown };
+allow casefolding_remover system_data_root_file:dir { create read open remove_name rmdir write add_name };
+allow casefolding_remover media_userdir_file:dir { create_dir_perms relabelfrom relabelto };
+allow casefolding_remover media_userdir_file:file r_file_perms;
+allow casefolding_remover media_rw_data_file:dir { create_dir_perms relabelfrom relabelto };
+allow casefolding_remover media_rw_data_file:{ file lnk_file } { getattr setattr link unlink };
+allowxperm casefolding_remover media_userdir_file:dir ioctl { FS_IOC_GETFLAGS FS_IOC_SETFLAGS };
+
+allow casefolding_remover servicemanager:binder { call transfer };
+add_service(casefolding_remover, casefolding_remover_service);
+
+# No one other than init can launch us
+neverallow { domain -init } casefolding_remover:process { transition dyntransition };
+
+# No one other than vold can call the service
+neverallow { domain -vold } casefolding_remover:binder call;

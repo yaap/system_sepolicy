@@ -5,6 +5,10 @@ tmpfs_domain(mediaextractor)
 allow mediaextractor appdomain_tmpfs:file { getattr map read write };
 allow mediaextractor mediaserver_tmpfs:file { getattr map read write };
 allow mediaextractor system_server_tmpfs:file { getattr map read write };
+allow mediaextractor appdomain:memfd_file { getattr map read write };
+allow mediaextractor mediaserver:memfd_file { getattr map read write };
+allow mediaextractor mediatranscoding:memfd_file { getattr map read write };
+allow mediaextractor system_server:memfd_file { getattr map read write };
 
 get_prop(mediaextractor, device_config_media_native_prop)
 get_prop(mediaextractor, device_config_swcodec_native_prop)

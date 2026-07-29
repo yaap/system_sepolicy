@@ -1,5 +1,5 @@
 # Domain for a child process that manages virtual machines on behalf of its parent.
-type virtualizationmanager, domain, coredomain;
+type virtualizationmanager_vendor, domain, coredomain, virtualizationmanager_domain;
 type virtualizationmanager_exec, system_file_type, exec_type, file_type;
 
 # system/sepolicy/public is for vendor-facing type and attribute definitions.

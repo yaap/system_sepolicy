@@ -289,6 +289,11 @@ neverallow all_untrusted_apps incident_service:service_manager find;
 # Only privileged apps may find stats service
 neverallow all_untrusted_apps stats_service:service_manager find;
 
+# Only privileged apps may find AiSeal host service.
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+    neverallow all_untrusted_apps aiseal_host_service:service_manager find;
+')
+
 # Do not allow untrusted app to read hidden system proprerties.
 # We do not include in the exclusions other normally untrusted applications such as mediaprovider
 #  due to the specific logging use cases.
@@ -332,7 +337,5 @@ neverallow all_untrusted_apps hidraw_device:chr_file *;
 
 # Untrusted apps don't have access to native serial service or serial ports. Otherwise
 # they may circumvent the access control.
-neverallow all_untrusted_apps { serial_device usb_serial_device}:chr_file open;
-starting_at_board_api(202602, `
-    neverallow all_untrusted_apps native_serial_service:service_manager find;
-')
+neverallow all_untrusted_apps { serial_device usb_serial_device usbaccessory_device }:{ chr_file file } open;
+neverallow all_untrusted_apps native_serial_service:service_manager find;

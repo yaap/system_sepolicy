@@ -33,11 +33,7 @@ from dataclasses import dataclass
 from typing import Callable, List
 
 import policy
-
-
-SHARED_LIB_EXTENSION = '.dylib' if sys.platform == 'darwin' else '.so'
-LIBSEPOLWRAP = "libsepolwrap" + SHARED_LIB_EXTENSION
-
+import utils
 
 @dataclass
 class Is:
@@ -224,16 +220,6 @@ def check_line(pol: policy.Policy, line: str, rules, ignore_unknown_context=Fals
     return errors
 
 
-def extract_data(name, temp_dir):
-    out_path = os.path.join(temp_dir, name)
-    with open(out_path, 'wb') as f:
-        blob = pkgutil.get_data('apex_sepolicy_tests', name)
-        if not blob:
-            sys.exit(f"Error: {name} does not exist. Is this binary corrupted?\n")
-        f.write(blob)
-    return out_path
-
-
 def do_main(work_dir):
     """Do testing"""
     parser = argparse.ArgumentParser()
@@ -242,8 +228,8 @@ def do_main(work_dir):
     parser.add_argument('-p', '--partition', help='partition to check Treble violations')
     args = parser.parse_args()
 
-    lib_path = extract_data(LIBSEPOLWRAP, work_dir)
-    policy_path = extract_data('precompiled_sepolicy', work_dir)
+    lib_path = policy.ReadLibsepolwrap(work_dir)
+    policy_path = utils.extract_data(work_dir, 'precompiled_sepolicy')
     pol = policy.Policy(policy_path, None, lib_path)
 
     # ignore unknown contexts unless --all is specified
@@ -264,5 +250,6 @@ def do_main(work_dir):
 
 
 if __name__ == '__main__':
-    with tempfile.TemporaryDirectory() as temp_dir:
+    # On a certain environment (e.g. NFS), cleanup may fail. Ignore it.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
         do_main(temp_dir)

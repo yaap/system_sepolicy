@@ -43,6 +43,16 @@ Apps that are signed with the platform key. These are installed within the
 system or vendor image. com.android.systemui is an example of an app running
 with this type.
 
+Apps targeting the most recent SDK version will be typed as `platform_app`.
+
+Like untrusted apps, when an app is targeting a previous SDK version, it may
+have the type `platform_app_xx` type, where xx is the targetSdkVersion. For
+instance, an app with `targetSdkVersion = 36` or lower in its manifest will
+be typed as `platform_app_36`.
+
+The `platform_app_all` attribute can be used to reference all the types
+described in this section (that is, `platform_app` and `platform_app_36`).
+
 ## system_app
 Apps pre-installed on a device, signed by the platform key and running with the
 system UID. com.android.settings is an example of an app running with this
@@ -55,3 +65,13 @@ com.google.android.apps.messaging is an example of an app running as priv_app.
 Permissions for these apps need to be explicitly granted, see
 https://source.android.com/docs/core/permissions/perms-allowlist for more
 details.
+
+Apps targeting the most recent SDK version will be typed as `priv_app`.
+
+Like untrusted apps, when an app is targeting a previous SDK version,
+it may have the `priv_app_xx` type, where xx is the targetSdkVersion. For
+instance, an app with `targetSdkVersion = 36` or lower in its manifest will
+be typed as `priv_app_36`.
+
+The `priv_app_all` attribute can be used to reference all the types described
+in this section (that is, `priv_app` and `priv_app_36`).

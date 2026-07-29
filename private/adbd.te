@@ -105,9 +105,7 @@ binder_use(adbd)
 binder_call(adbd, surfaceflinger)
 binder_call(adbd, gpuservice)
 # b/13188914
-allow adbd gpu_device:chr_file rw_file_perms;
-allow adbd gpu_device:dir r_dir_perms;
-allow adbd ion_device:chr_file rw_file_perms;
+gpu_sphal_use(adbd)
 r_dir_file(adbd, system_file)
 
 # Needed for various screenshots
@@ -207,6 +205,9 @@ r_dir_file(adbd, vendor_apex_file)
 # Allow adb pull of updated apex files in /data/apex/active.
 allow adbd apex_data_file:dir search;
 allow adbd staging_data_file:file r_file_perms;
+# data APEXes are moved to device-mapped block files
+allow adbd apex_dm_device:blk_file r_file_perms;
+allow adbd block_device:dir search;
 
 # Allow adbd to pull /apex/apex-info-list.xml for CTS tests.
 allow adbd apex_info_file:file r_file_perms;
@@ -241,3 +242,6 @@ neverallow * adbd:process dyntransition;
 
 # allow adbd to check if an app is frozen
 allow adbd cgroup_v2:file read;
+
+# Allow adbd to receive UDS timeout
+get_prop(adbd, adb_timeout_prop)

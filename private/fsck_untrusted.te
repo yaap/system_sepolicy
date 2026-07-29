@@ -15,6 +15,9 @@ allow fsck_untrusted vold_device:blk_file rw_file_perms;
 
 allow fsck_untrusted proc_mounts:file r_file_perms;
 
+# Allow fsck to get physical sector size for vold block devices
+allowxperm fsck_untrusted vold_device:blk_file ioctl { BLKPBSZGET };
+
 # To determine if it is safe to run fsck on a filesystem, e2fsck
 # must first determine if the filesystem is mounted. To do that,
 # e2fsck scans through /proc/mounts and collects all the mounted

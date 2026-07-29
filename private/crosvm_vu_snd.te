@@ -1,0 +1,42 @@
+type crosvm_vu_snd, domain, coredomain;
+type crosvm_vu_snd_tmpfs, file_type;
+type crosvm_vu_snd_exec, system_file_type, exec_type, file_type;
+
+# Allow crosvm_vu_snd to be started via crosvm_vu_snd_exec
+allow crosvm_vu_snd crosvm_vu_snd_exec:file { entrypoint read execute getattr map };
+domain_auto_trans(crosvm_domain, crosvm_vu_snd_exec, crosvm_vu_snd);
+
+# Allow crosvm_vu_snd to execute crosvm_exec (for nested crosvm calls) without transition.
+allow crosvm_vu_snd crosvm_exec:file rx_file_perms;
+
+# Let crosvm_vu_snd create temporary files.
+tmpfs_domain(crosvm_vu_snd)
+
+# crosvm_vu_snd needs to talk to crosvm_domain via virt queue which is implemented
+# as an anonymous memory (tmpfs) on the crosvm_domain side.
+allow crosvm_vu_snd crosvm_domain_tmpfs:file { read write getattr map };
+allow crosvm_vu_snd crosvm_domain:memfd_file { read write getattr map };
+
+# Allow using a socket path under /data/misc/virtualizationservice.
+# Allow crosvm_vu_snd to create unix socket for vhost-user-snd
+# TODO: Use /proc/self/fd passing to avoid this.
+allow crosvm_vu_snd virtualizationservice_data_file:dir { search add_name write remove_name };
+allow crosvm_vu_snd virtualizationservice_data_file:sock_file { create write unlink };
+
+# Let crosvm_vu_snd receive file descriptors from VirtualizationService.
+allow crosvm_vu_snd virtualizationmanager_domain:fd use;
+
+# Allow communication between crosvm and crosvm_vu_snd via unix stream sockets.
+allow crosvm_domain crosvm_vu_snd:unix_stream_socket { connectto read write getattr getopt shutdown };
+allow crosvm_vu_snd crosvm_domain:unix_stream_socket { read write getattr getopt shutdown };
+allow crosvm_vu_snd crosvm_domain:fd use;
+allow crosvm_domain crosvm_vu_snd:fd use;
+
+# Allow crosvm_vu_snd to communicate with the servicemanager and audioserver.
+binder_use(crosvm_vu_snd)
+binder_call(crosvm_vu_snd, audioserver)
+binder_call(audioserver, crosvm_vu_snd)
+allow crosvm_vu_snd audioserver_service:service_manager find;
+
+# Allow transition to crash_dump domain on a crash.
+neverallow crosvm_vu_snd { domain -crash_dump }:process transition;

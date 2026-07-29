@@ -223,7 +223,7 @@ def get_args():
         help='Path to the latest compiled base platform sepolicy.')
     parser.add_argument(
         '--old-plat-sepolicy',
-        help='Path to the earlier version of compiled base platform speolicy.')
+        help='Path to the earlier version of compiled base platform sepolicy.')
     parser.add_argument(
         '--base-plat-pub-policy',
         help='Path to base_plat_pub_policy.cil.')

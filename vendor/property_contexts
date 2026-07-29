@@ -1,0 +1,2 @@
+# Properties for Context Hub HAL
+vendor.chre.preloaded_nanoapps.path             u:object_r:vendor_chre_hal_prop:s0

@@ -8,6 +8,18 @@ add_service(composd, compos_service)
 
 # Call back into system server
 binder_call(composd, system_server)
+# Call back into artd
+binder_call(composd, artd)
+
+# Only allow artd and system server to call into composd
+# This is to enforce a policy where only ARTd is allowed to use the native stable API
+# `libcom_android_compos_ffi_c`. Anything other than ARTd trying to start a dex2oat
+# using this library will fail. This is because the API is only considered stable
+# when the caller is in the ART module; for any other caller the API is
+# considered unstable.
+# Adding another domain to this list likely means that the verified dex2oat API is being
+# used in an unstable fashion; think very carefully before adding a new domain to this list.
+neverallow { domain -artd -composd -system_server -servicemanager} composd:binder call;
 
 # Start a VM
 virtualizationservice_use(composd)

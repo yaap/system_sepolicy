@@ -95,7 +95,6 @@ phony {
     // TODO(b/329208946): migrate selinux_policy_system to Soong
     name: "selinux_policy_system_soong",
     required: [
-        "ashmem_compat_memfd_context.txt",
         "plat_bug_map",
         "plat_file_contexts",
         "plat_hwservice_contexts",
@@ -107,27 +106,26 @@ phony {
         "plat_sepolicy.cil",
         "plat_sepolicy_genfs_202504.cil",
         "plat_sepolicy_genfs_202604.cil",
+        "plat_sepolicy_genfs_202704.cil",
         "plat_service_contexts",
         "secilc",
-        "plat_29.0.cil",
-        "plat_30.0.cil",
         "plat_31.0.cil",
         "plat_32.0.cil",
         "plat_33.0.cil",
         "plat_34.0.cil",
         "plat_202404.cil",
-        "29.0.compat.cil",
-        "30.0.compat.cil",
+        "plat_202504.cil",
         "31.0.compat.cil",
         "32.0.compat.cil",
         "33.0.compat.cil",
         "34.0.compat.cil",
         "202404.compat.cil",
+        "202504.compat.cil",
     ] + select(soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"), {
-        "202504": [],
+        "202604": [],
         default: [
-            "plat_202504.cil",
-            "202504.compat.cil",
+            "plat_202604.cil",
+            "202604.compat.cil",
         ],
     }) + select(soong_config_variable("ANDROID", "PRODUCT_PRECOMPILED_SEPOLICY"), {
         true: ["plat_sepolicy_and_mapping.sha256"],
@@ -145,6 +143,11 @@ system_ext_public_policy = [":se_build_files{.system_ext_public}"]
 system_ext_private_policy = [":se_build_files{.system_ext_private}"]
 product_public_policy = [":se_build_files{.product_public}"]
 product_private_policy = [":se_build_files{.product_private}"]
+vendor_policy = [
+    ":se_build_files{.plat_vendor}",
+    ":se_build_files{.vendor}",
+    ":ashmem_build_file",
+]
 
 // reqd_policy_mask - a policy.conf file which contains only the bare minimum
 // policy necessary to use checkpolicy.
@@ -410,6 +413,14 @@ se_versioned_policy {
     vendor: true,
 }
 
+filegroup {
+    name: "ashmem_build_file",
+    srcs: select(soong_config_variable("ANDROID", "TARGET_RESTRICTS_ASHMEM_USAGE"), {
+        false: ["vendor/ashmem/ashmem_allow.te"],
+        default: [],
+    }),
+}
+
 // vendor_policy.cil - the vendor sepolicy. This needs attributization and to be combined
 // with the platform-provided policy.  It makes use of the reqd_policy_mask files from private
 // policy and the platform public policy files in order to use checkpolicy.
@@ -419,16 +430,14 @@ se_policy_conf {
     srcs: plat_public_policy +
         system_ext_public_policy +
         product_public_policy +
-        reqd_mask_policy + [
-            ":se_build_files{.plat_vendor}",
-            ":se_build_files{.vendor}",
-        ],
+        reqd_mask_policy +
+        vendor_policy,
     vendor: true,
     installable: false,
 }
 
 se_policy_cil {
-    name: "vendor_sepolicy.cil.raw",
+    name: "vendor_sepolicy.unversioned.cil",
     src: ":vendor_sepolicy.conf",
     filter_out: [":reqd_policy_mask.cil"],
     secilc_check: false, // will be done in se_versioned_policy module
@@ -439,7 +448,7 @@ se_policy_cil {
 se_versioned_policy {
     name: "vendor_sepolicy.cil",
     base: ":pub_policy.cil",
-    target_policy: ":vendor_sepolicy.cil.raw",
+    target_policy: ":vendor_sepolicy.unversioned.cil",
     version: "vendor",
     dependent_cils: [
         ":plat_sepolicy.cil",
@@ -461,21 +470,19 @@ se_policy_conf {
     srcs: plat_public_policy +
         system_ext_public_policy +
         product_public_policy +
-        reqd_mask_policy + [
-            ":se_build_files{.plat_vendor}",
-            ":se_build_files{.vendor}",
-            ":se_build_files{.odm}",
-        ],
+        reqd_mask_policy +
+        vendor_policy +
+        [":se_build_files{.odm}"],
     device_specific: true,
     installable: false,
 }
 
 se_policy_cil {
-    name: "odm_sepolicy.cil.raw",
+    name: "odm_sepolicy.unversioned.cil",
     src: ":odm_sepolicy.conf",
     filter_out: [
         ":reqd_policy_mask.cil",
-        ":vendor_sepolicy.cil.raw",
+        ":vendor_sepolicy.unversioned.cil",
     ],
     secilc_check: false, // will be done in se_versioned_policy module
     device_specific: true,
@@ -485,7 +492,7 @@ se_policy_cil {
 se_versioned_policy {
     name: "odm_sepolicy.cil",
     base: ":pub_policy.cil",
-    target_policy: ":odm_sepolicy.cil.raw",
+    target_policy: ":odm_sepolicy.unversioned.cil",
     version: "vendor",
     dependent_cils: [
         ":plat_sepolicy.cil",
@@ -568,14 +575,6 @@ sepolicy_vers {
     name: "plat_sepolicy_vers.txt",
     version: "vendor",
     vendor: true,
-}
-
-// We output the ashmem compat memfd context here, so that libcutils can read
-// it when assigning contexts to memfds.
-prebuilt_etc {
-    name: "ashmem_compat_memfd_context.txt",
-    src: "ashmem_compat_memfd_context.txt",
-    relative_install_path: "selinux",
 }
 
 genrule {
@@ -729,11 +728,9 @@ se_policy_conf {
         system_ext_public_policy +
         system_ext_private_policy +
         product_public_policy +
-        product_private_policy + [
-            ":se_build_files{.plat_vendor}",
-            ":se_build_files{.vendor}",
-            ":se_build_files{.odm}",
-        ],
+        product_private_policy +
+        vendor_policy +
+        [":se_build_files{.odm}"],
     target_recovery: true,
     installable: false,
     recovery: true,
@@ -936,11 +933,9 @@ se_neverallow_test {
         system_ext_public_policy +
         system_ext_private_policy +
         product_public_policy +
-        product_private_policy + [
-            ":se_build_files{.plat_vendor}",
-            ":se_build_files{.vendor}",
-            ":se_build_files{.odm}",
-        ],
+        product_private_policy +
+        vendor_policy +
+        [":se_build_files{.odm}"],
 }
 
 //////////////////////////////////
@@ -949,7 +944,7 @@ se_neverallow_test {
 // SEPOLICY_FREEZE_TEST_EXTRA_DIRS and SEPOLICY_FREEZE_TEST_EXTRA_PREBUILT_DIRS.
 //////////////////////////////////
 
-FREEZE_TEST_BOARD_API_LEVEL = "202504"
+FREEZE_TEST_BOARD_API_LEVEL = "202604"
 
 se_policy_conf {
     name: "base_plat_pub_policy_for_freeze_test.conf",
@@ -1053,17 +1048,16 @@ phony {
         "system_ext_sepolicy.cil",
     ] + [
         //"ifdef HAS_SYSTEM_EXT_SEPOLICY" check included in .cil
-        "system_ext_29.0.cil",
-        "system_ext_30.0.cil",
         "system_ext_31.0.cil",
         "system_ext_32.0.cil",
         "system_ext_33.0.cil",
         "system_ext_34.0.cil",
         "system_ext_202404.cil",
+        "system_ext_202504.cil",
     ] + select(soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"), {
-        "202504": [],
+        "202604": [],
         default: [
-            "system_ext_202504.cil",
+            "system_ext_202604.cil",
         ],
     }) +
     select(soong_config_variable("ANDROID", "PRODUCT_PRECOMPILED_SEPOLICY"), {
@@ -1082,17 +1076,16 @@ phony {
         "system_ext_service_contexts_test",
         "system_ext_mac_permissions.xml",
         "system_ext_bug_map",
-        "system_ext_29.0.compat.cil",
-        "system_ext_30.0.compat.cil",
         "system_ext_31.0.compat.cil",
         "system_ext_32.0.compat.cil",
         "system_ext_33.0.compat.cil",
         "system_ext_34.0.compat.cil",
         "system_ext_202404.compat.cil",
+        "system_ext_202504.compat.cil",
     ] + select(soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"), {
-        "202504": [],
+        "202604": [],
         default: [
-            "system_ext_202504.compat.cil",
+            "system_ext_202604.compat.cil",
         ],
     }) + select(release_flag("RELEASE_AVF_ENABLE_VM_TO_TEE_SERVICES_ALLOWLIST"), {
         true: ["system_ext_tee_service_contexts"],
@@ -1107,13 +1100,12 @@ phony {
         "product_mapping_file",
         "product_sepolicy.cil",
         // "ifdef HAS_PRODUCT_PUBLIC_SEPOLICY" check included in .cil
-        "product_29.0.cil",
-        "product_30.0.cil",
         "product_31.0.cil",
         "product_32.0.cil",
         "product_33.0.cil",
         "product_34.0.cil",
         "product_202404.cil",
+        "product_202504.cil",
         "product_file_contexts",
         // "ifdef HAS_PRODUCT_SEPOLICY_DIR" in Android.mk can be ignored.
         "product_file_contexts_test",
@@ -1130,9 +1122,9 @@ phony {
         true: ["product_sepolicy_and_mapping.sha256"],
         default: [],
     }) + select(soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"), {
-        "202504": [],
+        "202604": [],
         default: [
-            "product_202504.cil",
+            "product_202604.cil",
         ],
     }) + select(release_flag("RELEASE_AVF_ENABLE_VM_TO_TEE_SERVICES_ALLOWLIST"), {
         true: ["product_tee_service_contexts"],
@@ -1210,23 +1202,20 @@ phony {
 phony {
     name: "selinux_policy_system",
     required: [
-        "29.0.compat.cil",
-        "30.0.compat.cil",
         "31.0.compat.cil",
         "32.0.compat.cil",
         "33.0.compat.cil",
         "34.0.compat.cil",
         "202404.compat.cil",
-        "ashmem_compat_memfd_context.txt",
+        "202504.compat.cil",
         "build_sepolicy",
         "fuzzer_bindings_test",
-        "plat_29.0.cil",
-        "plat_30.0.cil",
         "plat_31.0.cil",
         "plat_32.0.cil",
         "plat_33.0.cil",
         "plat_34.0.cil",
         "plat_202404.cil",
+        "plat_202504.cil",
         "plat_bug_map",
         "plat_file_contexts",
         "plat_file_contexts_data_test",
@@ -1242,15 +1231,16 @@ phony {
         "plat_sepolicy.cil",
         "plat_sepolicy_genfs_202504.cil",
         "plat_sepolicy_genfs_202604.cil",
+        "plat_sepolicy_genfs_202704.cil",
         "plat_service_contexts",
         "plat_service_contexts_test",
         "searchpolicy",
         "secilc",
     ] + select(soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"), {
-        "202504": [],
+        "202604": [],
         default: [
-            "202504.compat.cil",
-            "plat_202504.cil",
+            "202604.compat.cil",
+            "plat_202604.cil",
         ],
     }) + select(soong_config_variable("ANDROID", "PRODUCT_PRECOMPILED_SEPOLICY"), {
         true: ["plat_sepolicy_and_mapping.sha256"],
@@ -1265,23 +1255,22 @@ phony {
             "sepolicy_compat_test",
             "sepolicy_test",
             "sepolicy_dev_type_test",
-            "treble_sepolicy_tests_29.0",
-            "treble_sepolicy_tests_30.0",
             "treble_sepolicy_tests_31.0",
             "treble_sepolicy_tests_32.0",
             "treble_sepolicy_tests_33.0",
             "treble_sepolicy_tests_34.0",
             "treble_sepolicy_tests_202404",
+            "treble_sepolicy_tests_202504",
         ],
     }) + select((
         soong_config_variable("ANDROID", "PLATFORM_SEPOLICY_VERSION"),
         soong_config_variable("ANDROID", "ASAN_ENABLED"),
         product_variable("selinux_ignore_neverallows"),
     ), {
-        ("202504", true, true): [],
+        ("202604", true, true): [],
         (default, true, true): [],
         (default, default, default): [
-            "treble_sepolicy_tests_202504",
+            "treble_sepolicy_tests_202604",
         ],
     }) + select(soong_config_variable("ANDROID", "RELEASE_BOARD_API_LEVEL_FROZEN"), {
         true: ["se_freeze_test"],

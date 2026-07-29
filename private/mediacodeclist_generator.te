@@ -1,0 +1,11 @@
+type mediacodeclist_generator, domain, coredomain;
+type mediacodeclist_generator_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(mediacodeclist_generator)
+
+binder_use(mediacodeclist_generator)
+add_service(mediacodeclist_generator, mediacodeclist_generator_service)
+
+# Querying Codec HALs
+hal_client_domain(mediacodeclist_generator, hal_omx)
+hal_client_domain(mediacodeclist_generator, hal_codec2)

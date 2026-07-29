@@ -1,0 +1,41 @@
+until_board_api(202604, `
+  type prefetch, coredomain, domain;
+')
+
+type prefetch_exec, exec_type, file_type, system_file_type;
+
+init_daemon_domain(prefetch)
+
+# Allow prefetch to start recording by enabling tracing event under
+# /sys/kernel/tracing/events/filemap/mm_filemap_add_to_page_cache
+allow prefetch debugfs_tracing_instances:dir create_dir_perms;
+allow prefetch debugfs_tracing_instances:file rw_file_perms;
+
+# Allow to read/write/create/delete to storage prefetch record files
+allow prefetch metadata_file:dir search;
+allow prefetch prefetch_metadata_file:dir rw_dir_perms;
+allow prefetch prefetch_metadata_file:file create_file_perms;
+
+get_prop(prefetch, prefetch_boot_prop);
+set_prop(prefetch, prefetch_service_prop);
+
+# Disallow other domains controlling prefetch service.
+neverallow {
+  domain
+  -init
+  -shell
+} ctl_prefetch_prop:property_service set;
+
+# Allow rootfs so prefetch can walk through directory tree and
+# create a map of inodes -> file path.
+allow prefetch rootfs:dir { open read search getattr };
+
+# Ignore denies of reading files in /product/etc/selinux/
+dontaudit prefetch file_contexts_file:file r_file_perms;
+dontaudit prefetch hwservice_contexts_file:file r_file_perms;
+dontaudit prefetch keystore2_key_contexts_file:file r_file_perms;
+dontaudit prefetch mac_perms_file:file r_file_perms;
+dontaudit prefetch property_contexts_file:file r_file_perms;
+dontaudit prefetch seapp_contexts_file:file r_file_perms;
+dontaudit prefetch service_contexts_file:file r_file_perms;
+dontaudit prefetch tee_service_contexts_file:file r_file_perms;

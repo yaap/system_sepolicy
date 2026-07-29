@@ -76,8 +76,7 @@ allow $1 $2:{ file lnk_file } r_file_perms;
 # Allow access to a unique type for this domain when creating tmpfs / ashmem files.
 define(`tmpfs_domain', `
 type_transition $1 tmpfs:file $1_tmpfs;
-allow $1 $1_tmpfs:file { read write getattr map ioctl relabelfrom };
-allowxperm $1 $1_tmpfs:file ioctl ashmem_ioctls;
+allow $1 $1_tmpfs:file { read write getattr map };
 ')
 
 # pdx macros for IPC. pdx is a high-level name which contains transport-specific
@@ -180,67 +179,6 @@ dontaudit su $1_userfaultfd:anon_inode *;
 neverallow { domain -$1 } $1_userfaultfd:anon_inode *;
 ')
 
-####################################
-# virtualizationservice_use(domain)
-# Allow domain to create and communicate with a virtual machine using
-# virtualizationservice and virtualizationmanager.
-define(`virtualizationservice_use', `
-# Transition to virtualizationmanager when the client executes it.
-domain_auto_trans($1, virtualizationmanager_exec, virtualizationmanager)
-# Allow virtualizationmanager to communicate over UDS with the client.
-allow { virtualizationmanager crosvm } $1:unix_stream_socket { ioctl getattr read write };
-# Let the client pass file descriptors to virtualizationmanager and on to crosvm.
-allow { virtualizationmanager crosvm } $1:fd use;
-# Let the client use file descriptors created by virtualizationmanager.
-allow $1 virtualizationmanager:fd use;
-# Allow piping console log to the client
-allow { virtualizationmanager crosvm } $1:fifo_file { ioctl getattr read write };
-# Allow client to read/write vsock created by virtualizationmanager to communicate with the VM
-# that it created. Notice that we do not grant permission to create a vsock;
-# the client can only connect to VMs that it owns.
-allow $1 virtualizationmanager:vsock_socket { getattr getopt read write };
-# Allow client to inspect hypervisor capabilities
-get_prop($1, hypervisor_prop)
-# Allow client to read (but not open) the crashdump provided by virtualizationmanager
-allow $1 virtualizationservice_data_file:file { getattr read };
-# Allow virtualizationmanager to read the path of the client using /proc/{PID}/exe
-allow virtualizationmanager $1:dir search;
-allow virtualizationmanager $1:file read;
-allow virtualizationmanager $1:lnk_file read;
-
-# Allow owner of a VM to kill the VM forcibly, by sending sigkill to the process group
-# where virtmgr is the leader
-allow $1 crosvm:process sigkill;
-')
-
-####################################
-# early_virtmgr_use(domain)
-# Allow domain to create and communicate with an early virtual machine using
-# early_virtmgr.
-define(`early_virtmgr_use', `
-# Transition to early_virtmgr when the client executes it.
-domain_auto_trans($1, early_virtmgr_exec, early_virtmgr)
-# Allow early_virtmgr to communicate over UDS with the client.
-allow { early_virtmgr crosvm } $1:unix_stream_socket { ioctl getattr read write };
-# Let the client pass file descriptors to early_virtmgr and on to crosvm.
-allow { early_virtmgr crosvm } $1:fd use;
-allow { early_virtmgr crosvm } $1_tmpfs:file rw_file_perms;
-# Let the client use file descriptors created by early_virtmgr.
-allow $1 early_virtmgr:fd use;
-# Allow piping console log to the client
-allow { early_virtmgr crosvm } $1:fifo_file { ioctl getattr read write };
-# Allow client to read/write vsock created by early_virtmgr to communicate with the VM
-# that it created. Notice that we do not grant permission to create a vsock;
-# the client can only connect to VMs that it owns.
-allow $1 early_virtmgr:vsock_socket { getattr getopt read write };
-# Allow client to inspect hypervisor capabilities
-get_prop($1, hypervisor_prop)
-# Allow early_virtmgr to read the path of the client using /proc/{PID}/exe
-allow early_virtmgr $1:dir search;
-allow early_virtmgr $1:file read;
-allow early_virtmgr $1:lnk_file read;
-')
-
 #####################################
 # app_domain(domain)
 # Allow a base set of permissions required for all apps.
@@ -249,8 +187,8 @@ typeattribute $1 appdomain;
 # Label tmpfs objects for all apps.
 type_transition $1 tmpfs:file appdomain_tmpfs;
 userfaultfd_use($1)
-allow $1 appdomain_tmpfs:file { execute getattr map read write ioctl relabelfrom };
-allowxperm $1 appdomain_tmpfs:file ioctl ashmem_ioctls;
+allow $1 appdomain_tmpfs:file { execute getattr map read write };
+allow $1 appdomain:memfd_file { execute getattr map read write };
 neverallow { $1 -runas_app -shell -simpleperf } { domain -$1 }:file no_rw_file_perms;
 neverallow { appdomain -runas_app -shell -simpleperf -$1 } $1:file no_rw_file_perms;
 # The Android security model guarantees the confidentiality and integrity
@@ -262,6 +200,28 @@ neverallow { appdomain -runas_app -shell -simpleperf -$1 } $1:file no_rw_file_pe
 # apps. llkd is excluded, as it needs ptrace access to inspect stack traces for
 # live lock conditions.
 neverallow { domain -$1 -crash_dump userdebug_or_eng(`-llkd') -runas_app -simpleperf } $1:process ptrace;
+# Allow list type transitions for anon_inode.
+# app_neverallows.te already blocks direct access by an untrusted_app_domain to a
+# domain:anon_inode, which forces the use of type transitions to access anon_inodes.
+# This neverallow further limits untrusted apps to only using an allowed list of target types.
+# This prevents policy writers from defining their own transitions to circumvent neverallow rules.
+# We must do this in a macro because the types are generated based on the given input domain.
+neverallow $1 ~{ $1_userfaultfd system_server_wrapfd }:anon_inode *;
+# Block io_uring.
+# Though the neverallow above blocks the use of our io_uring_use macro, there is nothing stopping a
+# policy writer from defining a transition to an allowlisted type from an io_uring anon_inode.
+#
+# E.g. one could write type_transition $1 $1:anon_inode $1_userfaultfd "[io_uring]";
+#
+# We block that here by claiming the transition for io_uring. sepolicy will fail to compile if two
+# rules with identical inputs have conflicting outputs. Note that trying to write a general
+# type transition without a name constraint will also be ineffective because named transitions
+# take precedence over unnamed transitions.
+type $1_block_io_uring;
+type_transition $1 $1:anon_inode $1_block_io_uring "[io_uring]";
+# Block this domain from making its own wrapfds.
+type $1_wrapfd;
+type_transition $1 $1:anon_inode $1_wrapfd "[wrapfd]";
 ')
 
 #####################################
@@ -272,10 +232,24 @@ typeattribute $1 untrusted_app_all;
 ')
 
 #####################################
+# priv_app_domain(domain)
+# Allow a base set of permissions required for all privileged apps.
+define(`priv_app_domain', `
+typeattribute $1 priv_app_all;
+')
+
+#####################################
 # isolated_app_domain(domain)
 # Allow a base set of permissions required for all isolated apps.
 define(`isolated_app_domain', `
 typeattribute $1 isolated_app_all;
+')
+
+#####################################
+# platform_app_domain(domain)
+# Allow a base set of permissions required for all apps signed with the platform key.
+define(`platform_app_domain', `
+typeattribute $1 platform_app_all;
 ')
 
 #####################################
@@ -340,6 +314,8 @@ typeattribute $1 $2;
 define(`hal_client_domain', `
 typeattribute $1 halclientdomain;
 typeattribute $1 $2_client;
+allow $1 $2:memfd_file { read write getattr map };
+allow $2 $1:memfd_file { read write getattr map };
 
 # TODO(b/34170079): Make the inclusion of the rules below conditional also on
 # non-Treble devices. For now, on non-Treble device, always grant clients of a
@@ -724,7 +700,7 @@ define(`use_credstore', `
 # use_omapi(domain)
 # Ability to use omapi.
 define(`use_omapi', `
-  allow $1 omapi_service:service_manager find;
+  allow $1 secure_element_service:service_manager find;
   binder_call($1, omapi)
   binder_call(omapi, $1)
 ')
@@ -817,6 +793,7 @@ define(`can_profile_heap', `
   # Allow to read and write to heapprofd shmem.
   # The client needs to read the read and write pointers in order to write.
   allow $1 heapprofd_tmpfs:file { read write getattr map };
+  allow $1 heapprofd:memfd_file { read write getattr map };
   # Use shared memory received over the unix socket.
   allow $1 heapprofd:fd use;
 
@@ -878,6 +855,7 @@ define(`never_profile_perf', `
 define(`perfetto_producer', `
   allow $1 traced:fd use;
   allow $1 traced_tmpfs:file { read write getattr map };
+  allow $1 traced:memfd_file { read write getattr map };
   unix_socket_connect($1, traced_producer, traced)
 
   # Also allow the service to use the producer file descriptors. This is
@@ -903,7 +881,7 @@ define(`dump_hal', `
 #
 # For devices launching with R or later, exported properties must be explicitly marked as
 # "restricted" or "public", depending on the accessibility outside the owner.
-# For devices launching with Q or eariler, this neverallow rules can be relaxed with defining
+# For devices launching with Q or earlier, this neverallow rules can be relaxed with defining
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true on BoardConfig.mk.
 # See {partition}_{accessibility}_prop macros below.
 #
@@ -924,7 +902,7 @@ $1
 #
 # For devices launching with S or later, all properties must be explicitly marked as one of:
 # system_property_type, vendor_property_type, or product_property_type.
-# For devices launching with R or eariler, this neverallow rules can be relaxed with defining
+# For devices launching with R or earlier, this neverallow rules can be relaxed with defining
 # BUILD_BROKEN_ENFORCE_SYSPROP_OWNER := true on BoardConfig.mk.
 # See {partition}_{accessibility}_prop macros below.
 #
@@ -948,7 +926,7 @@ define(`define_prop', `
 ###########################################
 # system_internal_prop(name)
 # Define a /system-owned property used only in /system
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`system_internal_prop', `
@@ -961,7 +939,7 @@ define(`system_internal_prop', `
 ###########################################
 # system_restricted_prop(name)
 # Define a /system-owned property which can't be written outside /system
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`system_restricted_prop', `
@@ -979,20 +957,20 @@ define(`system_public_prop', `define_prop($1, system, public)')
 
 ###########################################
 # system_vendor_config_prop(name)
-# Define a /system-owned property which can only be written by vendor_init
-# This is a macro for vendor-specific configuration properties which is meant
-# to be set once from vendor_init.
+# Define a /system-owned property which can only be written by vendor processes
+# (either vendor_init or init_dev_config). This is a macro for vendor-specific
+# configuration properties which is meant to be set once.
 #
 define(`system_vendor_config_prop', `
   system_public_prop($1)
   set_prop(vendor_init, $1)
-  neverallow { domain -init -vendor_init } $1:property_service set;
+  neverallow { domain -init -vendor_init -init_dev_config } $1:property_service set;
 ')
 
 ###########################################
 # product_internal_prop(name)
 # Define a /product-owned property used only in /product
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`product_internal_prop', `
@@ -1005,7 +983,7 @@ define(`product_internal_prop', `
 ###########################################
 # product_restricted_prop(name)
 # Define a /product-owned property which can't be written outside /product
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`product_restricted_prop', `
@@ -1024,7 +1002,7 @@ define(`product_public_prop', `define_prop($1, product, public)')
 ###########################################
 # vendor_internal_prop(name)
 # Define a /vendor-owned property used only in /vendor
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`vendor_internal_prop', `
@@ -1038,7 +1016,7 @@ define(`vendor_internal_prop', `
 ###########################################
 # vendor_restricted_prop(name)
 # Define a /vendor-owned property which can't be written outside /vendor
-# For devices launching with Q or eariler, this restriction can be relaxed with
+# For devices launching with Q or earlier, this restriction can be relaxed with
 # BUILD_BROKEN_TREBLE_SYSPROP_NEVERALLOW := true
 #
 define(`vendor_restricted_prop', `
@@ -1091,7 +1069,7 @@ type $1_iouring;
 type_transition $1 $1:anon_inode $1_iouring "[io_uring]";
 # Allow domain to create/use io_uring anon_inode.
 allow $1 $1_iouring:anon_inode { create map read write };
-allow $1 self:io_uring sqpoll;
+allow $1 self:io_uring { sqpoll allowed };
 # Other domains may not use iouring anon_inodes created by this domain.
 neverallow { domain -$1 } $1_iouring:anon_inode *;
 # io_uring checks for CAP_IPC_LOCK to determine whether or not to track
@@ -1108,17 +1086,10 @@ typeattribute $1 mapper_sphal_domain;
 ')
 
 ####################################
-# opengl_sphal_use(domain)
-# Allow domain to load opengl SPHAL.
-define(`opengl_sphal_use', `
-typeattribute $1 opengl_sphal_domain;
-')
-
-####################################
-# vulkan_sphal_use(domain)
-# Allow domain to load vulkan SPHAL.
-define(`vulkan_sphal_use', `
-typeattribute $1 vulkan_sphal_domain;
+#
+# Allow domain to load OpenGL / Vulkan SPHAL.
+define(`gpu_sphal_use', `
+typeattribute $1 gpu_sphal_domain;
 ')
 
 #####################################
@@ -1150,6 +1121,76 @@ define(`set_xperm_filter', `
     -runas_app
     -shell
   } $1:chr_file ioctl { $5 };
+')
+
+####################################
+# virtualizationservice_vendor_use(domain)
+# Allow domain to create and communicate with a virtual machine using
+# virtualizationservice and virtualizationmanager_vendor.
+define(`virtualizationservice_vendor_use', `
+# Transition to virtualizationmanager when the client executes it.
+domain_auto_trans($1, virtualizationmanager_exec, virtualizationmanager_vendor)
+# virtualizationmanager to be client of secretkeeper HAL. It ferries SecretManagement messages
+# from pVM to HAL.
+hal_client_domain(virtualizationmanager_vendor, hal_secretkeeper)
+# virtualizationmanager needs to talk to IVmCapabilitiesService HAL to allow specific VMs to
+# issue vendor-private smcs.
+hal_client_domain(virtualizationmanager_vendor, hal_vm_capabilities);
+# Allow virtualizationmanager to communicate over UDS with the client.
+allow { virtualizationmanager_vendor crosvm_domain } $1:unix_stream_socket { ioctl getattr getopt read write };
+# Let the client pass file descriptors to virtualizationmanager and on to crosvm.
+allow { virtualizationmanager_vendor crosvm_domain } $1:fd use;
+# Let the client use file descriptors created by virtualizationmanager.
+allow $1 virtualizationmanager_vendor:fd use;
+# Allow piping console log to the client
+allow { virtualizationmanager_vendor crosvm_domain } $1:fifo_file { ioctl getattr read write };
+# Allow client to read/write vsock created by virtualizationmanager to communicate with the VM
+# that it created. Notice that we do not grant permission to create a vsock;
+# the client can only connect to VMs that it owns.
+allow $1 virtualizationmanager_vendor:vsock_socket { getattr getopt read write };
+# Allow client to inspect hypervisor capabilities
+get_prop($1, hypervisor_prop)
+# Allow client to read (but not open) the crashdump provided by virtualizationmanager
+allow $1 virtualizationservice_data_file:file { getattr read };
+# Allow virtualizationmanager to read the path of the client using /proc/{PID}/exe
+allow virtualizationmanager_vendor $1:dir search;
+allow virtualizationmanager_vendor $1:file read;
+allow virtualizationmanager_vendor $1:lnk_file read;
+
+# Allow owner of a VM to kill the VM forcibly, by sending sigkill to the process group
+# where virtmgr is the leader
+allow $1 crosvm_domain:process sigkill;
+')
+
+####################################
+# early_virtmgr_vendor_use(domain)
+# Allow domain to create and communicate with an early virtual machine using
+# early_virtmgr_vendor.
+define(`early_virtmgr_vendor_use', `
+# Transition to early_virtmgr when the client executes it.
+domain_auto_trans($1, early_virtmgr_exec, early_virtmgr_vendor)
+# Allow early_virtmgr to communicate over UDS with the client.
+allow { early_virtmgr_vendor crosvm_domain } $1:unix_stream_socket { ioctl getattr getopt read write };
+# Let the client pass file descriptors to early_virtmgr and on to crosvm.
+allow { early_virtmgr_vendor crosvm_domain } $1:fd use;
+allow { early_virtmgr_vendor crosvm_domain } $1_tmpfs:file rw_file_perms;
+# Let the client use file descriptors created by early_virtmgr.
+allow $1 early_virtmgr_vendor:fd use;
+# Allow piping console log to the client
+allow { early_virtmgr_vendor crosvm_domain } $1:fifo_file { ioctl getattr read write };
+# Allow client to read/write vsock created by early_virtmgr to communicate with the VM
+# that it created. Notice that we do not grant permission to create a vsock;
+# the client can only connect to VMs that it owns.
+allow $1 early_virtmgr_vendor:vsock_socket { getattr getopt read write };
+# Allow client to inspect hypervisor capabilities
+get_prop($1, hypervisor_prop)
+# Allow early_virtmgr to read the path of the client using /proc/{PID}/exe
+allow early_virtmgr_vendor $1:dir search;
+allow early_virtmgr_vendor $1:file read;
+allow early_virtmgr_vendor $1:lnk_file read;
+# early_virtmgr to be client of secretkeeper HAL. It ferries SecretManagement messages from pVM
+# to HAL.
+hal_client_domain(early_virtmgr_vendor, hal_secretkeeper)
 ')
 
 divert(0)

@@ -1,0 +1,100 @@
+type native_app_zygote, domain;
+
+typeattribute native_app_zygote coredomain;
+
+# Set the UID/GID of the process.
+# This will be further limited to a range of isolated UIDs with seccomp.
+allow native_app_zygote self:global_capability_class_set { setgid setuid };
+# Drop capabilities from bounding set.
+allow native_app_zygote self:global_capability_class_set setpcap;
+# Switch SELinux context to isolated app domain.
+allow native_app_zygote self:process setcurrent;
+allow native_app_zygote isolated_app:process dyntransition;
+
+# Get seapp_contexts
+allow native_app_zygote seapp_contexts_file:file r_file_perms;
+# Check validity of SELinux context before use.
+selinux_check_context(native_app_zygote)
+# Check SELinux permissions.
+selinux_check_access(native_app_zygote)
+
+# Child of zygote_next.
+allow native_app_zygote zygote_next:fd use;
+allow native_app_zygote zygote_next:process sigchld;
+allow native_app_zygote zygote_next:unix_dgram_socket { write getattr };
+
+# application data
+allow native_app_zygote apk_data_file:dir r_dir_perms;
+allow native_app_zygote apk_data_file:file { r_file_perms execute };
+
+# Allow native_app_zygote to stat the files that it opens. Native App Zygotes
+# must be able to inspect them so that it can reopen them on fork if necessary:
+# b/30963384.
+
+# Required for logging
+allow native_app_zygote pmsg_device:chr_file getattr;
+# Required for tracing
+allow native_app_zygote debugfs_trace_marker:file getattr;
+
+# Allow the native_app_zygote to access the runtime feature flag properties.
+get_prop(native_app_zygote, device_config_runtime_native_prop)
+get_prop(native_app_zygote, device_config_runtime_native_boot_prop)
+
+# Send unsolicited message to system_server
+unix_socket_send(native_app_zygote, system_unsolzygote, system_server)
+
+#####
+##### Neverallow
+#####
+
+# Only permit transition to isolated_app.
+neverallow native_app_zygote { domain -isolated_app }:process dyntransition;
+neverallow native_app_zygote { domain -crash_dump }:process transition;
+
+# Disallow write access to properties.
+neverallow native_app_zygote property_socket:sock_file write;
+neverallow native_app_zygote property_type:property_service set;
+
+neverallow native_app_zygote {
+  service_manager_type
+  -activity_service
+  -webviewupdate_service
+}:service_manager find;
+
+# Isolated apps should not be able to access the driver directly.
+neverallow native_app_zygote gpu_device:chr_file *;
+
+# Do not allow native_app_zygote access to /cache.
+neverallow native_app_zygote cache_file:dir ~{ r_dir_perms };
+neverallow native_app_zygote cache_file:file ~{ read getattr };
+
+# Do not allow most socket access. This is socket_class_set, excluding unix_dgram_socket,
+# unix_stream_socket, and netlink_selinux_socket.
+neverallow native_app_zygote domain:{
+  socket tcp_socket udp_socket rawip_socket netlink_socket packet_socket key_socket
+  appletalk_socket netlink_route_socket netlink_tcpdiag_socket
+  netlink_nflog_socket netlink_xfrm_socket netlink_audit_socket
+  netlink_dnrt_socket netlink_kobject_uevent_socket tun_socket netlink_iscsi_socket
+  netlink_fib_lookup_socket netlink_connector_socket netlink_netfilter_socket
+  netlink_generic_socket netlink_scsitransport_socket netlink_rdma_socket netlink_crypto_socket
+  sctp_socket icmp_socket ax25_socket ipx_socket netrom_socket atmpvc_socket
+  x25_socket rose_socket decnet_socket atmsvc_socket rds_socket irda_socket
+  pppox_socket llc_socket can_socket tipc_socket bluetooth_socket iucv_socket
+  rxrpc_socket isdn_socket phonet_socket ieee802154_socket caif_socket
+  alg_socket nfc_socket vsock_socket kcm_socket qipcrtr_socket smc_socket
+} *;
+
+# Only allow native_app_zygote to talk to the logd socket, and su on eng/userdebug.
+# This is because cap_setuid/cap_setgid allow to forge uid/gid in
+# SCM_CREDENTIALS. Think twice before changing.
+neverallow native_app_zygote {
+  domain
+  -native_app_zygote
+  -zygote_next
+  -logd
+  -system_server
+  userdebug_or_eng(`-su')
+}:unix_dgram_socket *;
+
+# Never allow ptrace
+neverallow native_app_zygote *:process ptrace;

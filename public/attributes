@@ -209,6 +209,12 @@ attribute appdomain;
 # All third party apps (except isolated_app and ephemeral_app)
 attribute untrusted_app_all;
 
+# All privileged apps
+attribute priv_app_all;
+
+# All platform apps
+attribute platform_app_all;
+
 # All apps with UID between AID_ISOLATED_START (99000) and AID_ISOLATED_END (99999).
 attribute isolated_app_all;
 
@@ -217,6 +223,9 @@ attribute isolated_compute_allowed_service;
 
 # All device types that would be allowed for isolated_compute_app.
 attribute isolated_compute_allowed_device;
+
+# All property types that would be allowed for isolated_compute_app.
+attribute isolated_compute_allowed_property_type;
 
 # All domains used for apps with network access.
 attribute netdomain;
@@ -345,9 +354,7 @@ hal_attribute(audiocontrol);
 hal_attribute(authgraph);
 hal_attribute(authsecret);
 hal_attribute(bluetooth);
-starting_at_board_api(202604, `
 hal_attribute(bluetooth_lpp);
-') # starting_at_board_api(202604)
 hal_attribute(bootctl);
 hal_attribute(broadcastradio);
 hal_attribute(camera);
@@ -383,6 +390,7 @@ hal_attribute(lowpan);
 hal_attribute(macsec);
 hal_attribute(mediaquality);
 hal_attribute(memtrack);
+hal_attribute(motioncontext);
 hal_attribute(neuralnetworks);
 hal_attribute(nfc);
 hal_attribute(nlinterceptor);
@@ -472,7 +480,6 @@ attribute tee_service_type;
 # HAL service used for custom smc filtering project
 hal_attribute(vm_capabilities);
 
-starting_at_board_api(202604, `
 # Domains violating Treble Labeling
 # debuggable builds ONLY. NOT ALLOWED on user builds.
 attribute treble_labeling_violators;
@@ -482,12 +489,21 @@ expandattribute treble_labeling_violators false;
 attribute mapper_sphal_domain;
 expandattribute mapper_sphal_domain false;
 
-# Domains loading opengl SPHAL
-attribute opengl_sphal_domain;
-expandattribute opengl_sphal_domain false;
+# Domains loading GPU SPHAL (OpenGL / Vulkan)
+attribute gpu_sphal_domain;
+expandattribute gpu_sphal_domain false;
 
-# Domains loading vulkan SPHAL
-attribute vulkan_sphal_domain;
-expandattribute vulkan_sphal_domain false;
+# NPU Scheduling HAL
+hal_attribute(npu_scheduling);
 
-') # starting_at_board_api(202604)
+
+attribute virtualizationmanager_domain;
+expandattribute virtualizationmanager_domain false;
+attribute early_virtmgr_domain;
+expandattribute early_virtmgr_domain false;
+attribute crosvm_domain;
+expandattribute crosvm_domain false;
+
+# HALs that use wrapfds should use this attribute
+attribute wrapfd_hal_domain;
+expandattribute wrapfd_hal_domain false;

@@ -1,0 +1,27 @@
+### ADB daemon common rules.
+### Put things here that are needed for both adbd proper and adbd in trade-in mode.
+
+# Connect to mdnsd via mdnsd socket.
+unix_socket_connect(adbd_common, mdnsd, mdnsd)
+
+# Access device logging gating property
+get_prop(adbd_common, device_logging_prop)
+
+# Use a pseudo tty.
+allow adbd_common devpts:chr_file rw_file_perms;
+
+# Read persist.adb.tls_server.enable property
+get_prop(adbd_common, system_adbd_prop)
+
+# Read whether or not Test Harness Mode is enabled
+get_prop(adbd_common, test_harness_prop)
+
+# Set service.adb.tcp.port, service.adb.tls.port, persist.adb.wifi.* properties
+set_prop(adbd_common, adbd_prop)
+set_prop(adbd_common, adbd_config_prop)
+
+# Read device's serial number from system properties
+get_prop(adbd_common, serialno_prop)
+
+# only adbd can connect to VMs
+neverallow { adbd_common -adbd } self:vsock_socket connect;

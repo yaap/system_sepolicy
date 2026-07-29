@@ -25,6 +25,7 @@ allow mediaprovider_app drmserver_service:service_manager find;
 
 # Talk to the MediaServer service
 allow mediaprovider_app mediaserver_service:service_manager find;
+allow mediaprovider_app mediaserver:memfd_file { getattr read write map };
 
 # Talk to the AudioServer service
 allow mediaprovider_app audioserver_service:service_manager find;
@@ -64,8 +65,7 @@ get_prop(mediaprovider_app, storage_config_prop)
 
 get_prop(mediaprovider_app, drm_service_config_prop)
 
-allow mediaprovider_app gpu_device:chr_file rw_file_perms;
-allow mediaprovider_app gpu_device:dir r_dir_perms;
+gpu_sphal_use(mediaprovider_app)
 
 dontaudit mediaprovider_app sysfs_vendor_sched:dir search;
 dontaudit mediaprovider_app sysfs_vendor_sched:file w_file_perms;

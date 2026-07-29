@@ -62,15 +62,6 @@ set_prop(init, userspace_reboot_exported_prop)
 # Allow the media variant properties to be set in init.
 set_prop(init, media_variant_prop)
 
-# Second-stage init performs a test for whether the kernel has SELinux hooks
-# for the perf_event_open() syscall. This is done by testing for the syscall
-# outcomes corresponding to this policy.
-# TODO(b/137092007): this can be removed once the platform stops supporting
-# kernels that precede the perf_event_open hooks (Android common kernels 4.4
-# and 4.9).
-allow init self:perf_event { open cpu };
-allow init self:global_capability2_class_set perfmon;
-
 # Allow opening /proc/kallsyms so that on boot, init can create and retain an
 # fd with the full address visibility (which is evaluated on open and persists
 # for the lifetime of the open file description). This fd can then be shared
@@ -605,6 +596,7 @@ allow init {
   sysfs_dm
   sysfs_lru_gen_enabled
   sysfs_pgsize_migration
+  sysfs_suspend_params
 }:file w_file_perms;
 
 allow init {
@@ -641,6 +633,7 @@ allow init {
   sysfs_leds
   sysfs_lowmemorykiller
   sysfs_power
+  sysfs_suspend_params
   sysfs_vibrator
   sysfs_wake_lock
   sysfs_zram
@@ -745,8 +738,9 @@ allow init kernel:process { getsched setsched };
 # swapon() needs write access to swap device
 # system/core/fs_mgr/fs_mgr.c - fs_mgr_swapon_all
 allow init swap_block_device:blk_file rw_file_perms;
-# Allow to change group owner and permissions for new swap setup in mmd
-allow init swap_block_device:blk_file setattr;
+# Allow updating zram permissions to grant mmd access. The zram[0-9]* file
+# can be either swap_block_device or ram_device.
+allow init { ram_device swap_block_device }:blk_file setattr;
 
 # Create and access /dev files without a specific type,
 # e.g. /dev/.coldboot_done, /dev/.booting
@@ -867,17 +861,13 @@ neverallow * init:process ptrace;
 # init owns the root of /data
 # TODO(b/140259336) We want to remove vendor_init
 # TODO(b/141108496) We want to remove toolbox
-neverallow { domain -init -toolbox -vendor_init -vold } system_data_root_file:dir add_name;
-neverallow { domain -init -toolbox -vendor_init -vold -userdata_alias_remove } system_data_root_file:dir { write remove_name };
+neverallow { domain -init -toolbox -vendor_init -vold -casefolding_remover } system_data_root_file:dir add_name;
+neverallow { domain -init -toolbox -vendor_init -vold -userdata_alias_remove -casefolding_remover } system_data_root_file:dir { write remove_name };
 
 # Only init is allowed to set userspace reboot related properties.
 neverallow { domain -init } userspace_reboot_exported_prop:property_service set;
 
-neverallow init self:perf_event { kernel tracepoint read write };
-dontaudit init self:perf_event { kernel tracepoint read write };
-
-# Only init is allowed to set the sysprop indicating whether perf_event_open()
-# SELinux hooks were detected.
+# Only init can write sys.init.perf_lsm_hooks
 neverallow { domain -init } init_perf_lsm_hooks_prop:property_service set;
 
 # Only init can write vts.native_server.on

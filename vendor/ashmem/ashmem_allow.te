@@ -1,0 +1,5 @@
+# This file is added as part of the vendor SELinux policy for devices that have
+# a vendor API level of 202504 or lower, as those devices are not within the
+# scope of the ashmem to memfd transition, and can continue to use ashmem
+# without any restrictions.
+allow domain ashmem_libcutils_device:chr_file open;

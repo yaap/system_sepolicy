@@ -1,0 +1,15 @@
+# appsearch_tenant is a specialized domain for running appsearch in Microdroid
+
+type appsearch_tenant, domain, coredomain, microdroid_payload;
+type appsearch_tenant_exec, exec_type, file_type, system_file_type;
+
+# Allow appsearch_tenant to write to the kernel log
+allow appsearch_tenant kmsg_device:chr_file w_file_perms;
+allow appsearch_tenant kmsg_debug_device:chr_file w_file_perms;
+
+# Allow appsearch_tenant to act as a server on Unix domain sockets created by
+# microdroid_manager, enabling it to listen over connections.
+allow appsearch_tenant microdroid_manager:unix_stream_socket {
+  listen accept getopt
+  read write getattr
+};

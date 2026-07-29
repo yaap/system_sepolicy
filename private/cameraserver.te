@@ -4,8 +4,7 @@ typeattribute cameraserver coredomain;
 init_daemon_domain(cameraserver)
 tmpfs_domain(cameraserver)
 
-allow cameraserver gpu_device:chr_file rw_file_perms;
-allow cameraserver gpu_device:dir r_dir_perms;
+gpu_sphal_use(cameraserver)
 allow cameraserver virtual_camera:binder call;
 
 binder_use(cameraserver)
@@ -17,7 +16,6 @@ hal_client_domain(cameraserver, hal_camera)
 allow cameraserver hal_camera_server:process signal;
 hal_client_domain(cameraserver, hal_graphics_allocator)
 
-allow cameraserver ion_device:chr_file rw_file_perms;
 allow cameraserver dmabuf_system_heap_device:chr_file r_file_perms;
 
 # Talk with graphics composer fences

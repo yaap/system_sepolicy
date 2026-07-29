@@ -1,0 +1,107 @@
+type activity_structured_service,    system_api_service, system_server_service, service_manager_type;
+type ambient_context_service,        app_api_service, system_server_service, service_manager_type;
+type authentication_policy_service,  app_api_service, system_api_service, system_server_service, service_manager_type;
+
+type casefolding_remover_service,    service_manager_type;
+type contextual_mode_service,        app_api_service, system_server_service, service_manager_type;
+type attention_service,              system_server_service, service_manager_type;
+type bg_install_control_service,     system_api_service, system_server_service, service_manager_type;
+type binder_stats_consumer_service,  system_server_service, service_manager_type;
+type compos_service,                 service_manager_type;
+type communal_service,               app_api_service, system_server_service, service_manager_type;
+type content_restriction_service,    app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
+type dynamic_system_service,         system_api_service, system_server_service, service_manager_type;
+type feature_flags_service,          app_api_service, system_server_service, service_manager_type;
+type fwk_devicestate_service, system_server_service, service_manager_type;
+type gsi_service,                    service_manager_type;
+type incidentcompanion_service,      app_api_service, system_api_service, system_server_service, service_manager_type;
+type logcat_service,                 system_server_service, service_manager_type;
+type logd_service,                   service_manager_type;
+type mediatuner_service,             app_api_service, service_manager_type;
+type mmd_service,                    service_manager_type;
+type on_device_intelligence_service, app_api_service, system_server_service, service_manager_type, isolated_compute_allowed_service;
+type pcc_sandbox_service,            app_api_service, system_server_service, service_manager_type;
+type personal_context_service,       app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
+type profcollectd_service,           service_manager_type;
+type protolog_configuration_service, app_api_service, system_api_service, system_server_service, service_manager_type, ephemeral_app_api_service;
+type resolver_service,               system_server_service, service_manager_type;
+type rkpd_registrar_service,         service_manager_type;
+type rkpd_refresh_service,           service_manager_type;
+type rkp_cert_processor_service,     service_manager_type;
+type safety_center_service,          app_api_service, system_api_service, system_server_service, service_manager_type;
+type stats_service,                  service_manager_type;
+type statsbootstrap_service,         system_server_service, service_manager_type;
+type statscompanion_service,         system_server_service, service_manager_type;
+type statsmanager_service,           system_api_service, system_server_service, service_manager_type;
+is_flag_enabled(RELEASE_SUPERVISION_SERVICE, `
+    type supervision_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
+')
+type talisman_service, system_api_service, system_server_service, service_manager_type;
+type task_continuity_service,       app_api_service, system_server_service, service_manager_type;
+type tracingproxy_service,          system_server_service, service_manager_type;
+type tradeinmode_service,           system_server_service, service_manager_type;
+type transparency_service,          system_server_service, service_manager_type;
+
+type accessor_trusty_keymint_comm_service, service_manager_type;
+type trusty_keymint_comm_service, service_manager_type;
+type accessor_trusty_gatekeeper_service, service_manager_type;
+type accessor_trusty_hwcrypto_sharedsecret_service, service_manager_type;
+type accessor_trusty_widevine_comm_service, service_manager_type;
+type trusty_widevine_comm_service, service_manager_type;
+type accessor_trusty_keymint_provisioning_service, service_manager_type;
+type accessor_trusty_keymint_provisioning_thal_service, service_manager_type;
+
+is_flag_enabled(RELEASE_AVF_ENABLE_DEVICE_ASSIGNMENT, `
+    type vfio_handler_service,          service_manager_type;
+')
+is_flag_enabled(RELEASE_AVF_ENABLE_LLPVM_CHANGES, `
+    type virtualization_maintenance_service, service_manager_type;
+')
+is_flag_enabled(RELEASE_AVF_ENABLE_NETWORK, `
+    type vm_tethering_service, system_server_service, service_manager_type;
+    type vmnic_service,        service_manager_type;
+')
+is_flag_enabled(RELEASE_AVF_ENABLE_MICROFUCHSIA, `
+    type microfuchsia_service,          service_manager_type;
+')
+
+type uce_service,                      service_manager_type;
+type wearable_sensing_service,         app_api_service, system_server_service, service_manager_type;
+type wifi_mainline_supplicant_service, service_manager_type;
+type dynamic_instrumentation_service,  app_api_service, system_server_service, service_manager_type;
+type uprobestats_service,              service_manager_type;
+type uprobestats_bridge_service,       app_api_service, system_server_service, service_manager_type;
+type advanced_protection_service,      app_api_service, system_server_service, service_manager_type;
+
+is_flag_enabled(RELEASE_RANGING_STACK, `
+    type ranging_service, app_api_service, system_server_service, service_manager_type;
+')
+
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+    type aiseal_host_service, service_manager_type;
+')
+
+type theme_service,                     app_api_service, system_server_service, service_manager_type;
+
+until_board_api(202604, `
+type hal_bluetooth_lpp_service, protected_service, hal_service_type, service_manager_type;
+')
+
+until_board_api(202604, `
+type hal_motioncontext_service, protected_service, hal_service_type, service_manager_type;
+')
+
+until_board_api(202604, `
+    type native_serial_service,         service_manager_type;
+')
+
+type usb_auth_service,        service_manager_type;
+
+###
+### Neverallow rules
+###
+
+# servicemanager handles registering or looking up named services.
+# It does not make sense to register or lookup something which is not a service.
+# Trigger a compile error if this occurs.
+neverallow domain ~{ service_manager_type vndservice_manager_type }:service_manager { add find };

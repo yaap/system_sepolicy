@@ -1,0 +1,29 @@
+# usbauthservice - USB Authorization Service
+#
+# This service is used to authorize USB devices based on the device's fingerprint.
+type usbauthservice, domain;
+
+type usbauthservice_exec, exec_type, file_type, system_file_type;
+
+typeattribute usbauthservice coredomain;
+
+init_daemon_domain(usbauthservice)
+
+binder_use(usbauthservice)
+
+add_service(usbauthservice, usb_auth_service)
+
+# Allow usbauthservice to configure USB authorization policy.
+# This is for /sys/bus/usb/devices/*/authorized_default
+r_dir_file(usbauthservice, sysfs_usb)
+allow usbauthservice sysfs_usb:file w_file_perms;
+# This is for /sys/module/usbcore/parameters/authorized_default
+r_dir_file(usbauthservice, sysfs_usbcore)
+allow usbauthservice sysfs_usbcore:file w_file_perms;
+
+# Allow usbauthservice to read device files.
+allow usbauthservice device:dir r_dir_perms;
+
+# Allow usbauthservice to access usb devices.
+allow usbauthservice usb_device:dir r_dir_perms;
+allow usbauthservice usb_device:chr_file { getattr open read write };

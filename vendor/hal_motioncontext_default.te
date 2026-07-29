@@ -1,0 +1,7 @@
+type hal_motioncontext_default, domain;
+hal_server_domain(hal_motioncontext_default, hal_motioncontext)
+allow hal_motioncontext_default hal_motioncontext_service:service_manager add;
+allow hal_motioncontext_default servicemanager:binder { call transfer };
+
+type hal_motioncontext_default_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(hal_motioncontext_default)

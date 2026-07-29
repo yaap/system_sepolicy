@@ -1,22 +1,16 @@
 type vmlauncher_app, domain;
 typeattribute vmlauncher_app coredomain;
+typeattribute vmlauncher_app priv_app_all;
 
 app_domain(vmlauncher_app)
 net_domain(vmlauncher_app)
 
-allow vmlauncher_app app_api_service:service_manager find;
-allow vmlauncher_app system_api_service:service_manager find;
-
-# TODO(b/402303887): Remove this when WebView doesn't requires camera access.
-allow vmlauncher_app cameraserver_service:service_manager find;
-
-allow vmlauncher_app shell_data_file:dir search;
-allow vmlauncher_app shell_data_file:file { read open write };
-virtualizationservice_use(vmlauncher_app)
+allow vmlauncher_app shell_data_file:file write;
 
 allow vmlauncher_app fsck_exec:file { r_file_perms execute execute_no_trans };
-allow vmlauncher_app crosvm:fd use;
-allow vmlauncher_app crosvm_tmpfs:file { map read write };
+allow vmlauncher_app crosvm_domain:fd use;
+allow vmlauncher_app crosvm_domain_tmpfs:file { map read write };
+allow vmlauncher_app crosvm_domain:memfd_file { map read write };
 allow vmlauncher_app crosvm_exec:file rx_file_perms;
 
 allow vmlauncher_app privapp_data_file:sock_file { create unlink write getattr };
@@ -25,7 +19,7 @@ is_flag_enabled(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES, `
   # TODO(b/332677707): remove them when display service uses binder RPC.
   allow vmlauncher_app virtualization_service:service_manager find;
   allow vmlauncher_app virtualizationservice:binder call;
-  allow vmlauncher_app crosvm:binder { call transfer };
+  allow vmlauncher_app crosvm_domain:binder { call transfer };
 ')
 
 is_flag_enabled(RELEASE_AVF_ENABLE_NETWORK, `

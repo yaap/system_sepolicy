@@ -1,0 +1,5 @@
+# Common permissions for domains using OpenGL / Vulkan SPHAL.
+
+allow gpu_sphal_domain gpu_device:chr_file rw_file_perms;
+allow gpu_sphal_domain gpu_device:dir r_dir_perms;
+r_dir_file(gpu_sphal_domain, sysfs_gpu)

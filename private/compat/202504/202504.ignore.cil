@@ -5,29 +5,42 @@
 (typeattribute new_objects)
 (typeattributeset new_objects
   ( new_objects
-    activity_structured_service
-    gatekeeper_vendor_data_file
+    aisealhostservice
+    aiseal_data_file
+    binderfs_logs_state_hashed
+    crosvm_vu_fs
+    crosvm_vu_fs_tmpfs
     hal_bluetooth_lpp_service
     hal_frp_service
+    hal_npu_scheduling_service
+    hal_timestamp_service
+    hal_motioncontext_service
     init_dev_config
     init_dev_config_exec
-    native_binder_stats_prop
+    mmd_config_prop
     native_serial_service
     pbtombstone_exec
+    personal_context_service
     prefetch
     task_continuity_service
     trusty_coverage_prop
     omapi
     omapi_exec
-    omapi_service
+    omapi_server
+    npu_service
     serialservice
     serialservice_exec
-    sysfs_thunderbolt
-    sysfs_typec
-    sysfs_usb_pd
+    sysfs_suspend_params
     usb_disable_when_locked_prop
+    usb_userspace_aoa_enabled_prop
+    vendor_dma_heap_config_file
     virtualizationservice_data_file
     wallet_prop
     anomaly_detector_service
-    uprobestats_service
+    remote_prov_prop
+    wifi_vendor_user_data_file
+    wpa_user_data_file
+    mmd_setup
+    contextual_mode_service
+    system_server_wrapfd
   ))

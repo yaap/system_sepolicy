@@ -2,7 +2,13 @@
 ### Apps signed with the platform key.
 ###
 
+# platform_app is the type assigned to platform apps which are running with a
+# recent targetSDK version.
 type platform_app, domain;
+
+# platform_app_36 is the type assigned to platform apps which are running with
+# a targetSDK version <= 36.
+type platform_app_36, domain;
 
 # system/sepolicy/public is for vendor-facing type and attribute definitions.
 # DO NOT ADD allow, neverallow, or dontaudit statements here.

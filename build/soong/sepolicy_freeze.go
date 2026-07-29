@@ -59,6 +59,10 @@ func (f *freezeTestModule) shouldCompareExtraDirs(ctx android.EarlyModuleContext
 	return val == "true"
 }
 
+func (f *freezeTestModule) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("sepolicy_freeze_test")
+}
+
 func (f *freezeTestModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if ctx.ModuleName() != "se_freeze_test" || ctx.ModuleDir() != "system/sepolicy" {
 		// two freeze test modules don't make sense.

@@ -20,6 +20,9 @@ ctl.start$adbd   u:object_r:ctl_adbd_prop:s0
 ctl.stop$adbd    u:object_r:ctl_adbd_prop:s0
 ctl.restart$adbd u:object_r:ctl_adbd_prop:s0
 
+ctl.start$ueventd   u:object_r:ctl_ueventd_prop:s0
+ctl.stop$ueventd    u:object_r:ctl_ueventd_prop:s0
+
 ctl.stop$apexd u:object_r:ctl_apexd_prop:s0
 
 ctl.start$apexd-vm      u:object_r:ctl_apexd_vm_prop:s0
@@ -108,6 +111,7 @@ ro.boot.first_stage_console        u:object_r:bootloader_prop:s0 exact string
 ro.boot.force_normal_boot          u:object_r:bootloader_prop:s0 exact string
 ro.boot.hardware                   u:object_r:bootloader_prop:s0 exact string
 ro.boot.microdroid.debuggable      u:object_r:bootloader_prop:s0 exact bool
+ro.boot.microdroid.adbd.start      u:object_r:bootloader_prop:s0 exact bool
 ro.boot.slot_suffix                u:object_r:bootloader_prop:s0 exact string
 ro.boot.vbmeta.avb_version         u:object_r:bootloader_prop:s0 exact string
 ro.boot.vbmeta.device_state        u:object_r:bootloader_prop:s0 exact string
@@ -188,6 +192,7 @@ persist.traced.enable   u:object_r:traced_enabled_prop:s0
 persist.traced_perf.enable u:object_r:traced_perf_enabled_prop:s0
 traced.lazy.               u:object_r:traced_lazy_prop:s0
 traced_relay.relay_port           u:object_r:traced_relay_relay_port_prop:s0 exact string
+traced.machine_name               u:object_r:traced_relay_relay_port_prop:s0 exact string
 
 # ART properties for CompOS.
 dalvik.vm.                                  u:object_r:dalvik_config_prop:s0 prefix

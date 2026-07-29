@@ -1,0 +1,154 @@
+###
+### All apps signed with the platform key.
+###
+
+# Read from /data/local/tmp or /data/data/com.android.shell.
+allow platform_app_all shell_data_file:dir search;
+allow platform_app_all shell_data_file:file { open getattr read map };
+allow platform_app_all icon_file:file { open getattr read };
+# Populate /data/app/vmdl*.tmp, /data/app-private/vmdl*.tmp files
+# created by system server.
+allow platform_app_all { apk_tmp_file apk_private_tmp_file }:dir rw_dir_perms;
+allow platform_app_all { apk_tmp_file apk_private_tmp_file }:file rw_file_perms;
+allow platform_app_all apk_private_data_file:dir search;
+# ASEC
+allow platform_app_all asec_apk_file:dir create_dir_perms;
+allow platform_app_all asec_apk_file:file create_file_perms;
+
+# Access to /data/media.
+allow platform_app_all media_rw_data_file:dir create_dir_perms;
+allow platform_app_all media_rw_data_file:file create_file_perms;
+
+# Write to /cache.
+allow platform_app_all cache_file:dir create_dir_perms;
+allow platform_app_all cache_file:file create_file_perms;
+
+# Direct access to vold-mounted storage under /mnt/media_rw
+# This is a performance optimization that allows platform apps to bypass the FUSE layer
+allow platform_app_all mnt_media_rw_file:dir r_dir_perms;
+allow platform_app_all sdcard_type:dir create_dir_perms;
+allow platform_app_all sdcard_type:file create_file_perms;
+
+# com.android.systemui
+allow platform_app_all rootfs:dir getattr;
+get_prop(platform_app_all, audio_config_prop)
+get_prop(platform_app_all, radio_cdma_ecm_prop)
+userdebug_or_eng(`
+  set_prop(platform_app_all, persist_wm_debug_prop)
+')
+neverallow { domain -init -dumpstate -system_server userdebug_or_eng(`-domain') } persist_wm_debug_prop:property_service set;
+
+set_prop(platform_app_all, debug_tracing_desktop_mode_visible_tasks_prop)
+
+# com.android.captiveportallogin reads /proc/vmstat
+allow platform_app_all {
+  proc_vmstat
+}:file r_file_perms;
+
+# /proc/net access.
+# TODO(b/9496886) Audit access for removal.
+r_dir_file(platform_app_all, proc_net_type)
+userdebug_or_eng(`
+  auditallow platform_app_all proc_net_type:{ dir file lnk_file } { getattr open read };
+')
+
+# Allow sharing traces to betterbug from /data/misc/wmtrace.
+userdebug_or_eng(`
+  allow platform_app_all trace_data_file:file create_file_perms;
+  allow platform_app_all trace_data_file:dir rw_dir_perms;
+')
+
+# Allow writing and removing wmshell protolog in /data/misc/wmtrace.
+userdebug_or_eng(`
+  allow platform_app_all wm_trace_data_file:dir rw_dir_perms;
+  allow platform_app_all wm_trace_data_file:file { getattr setattr create unlink rw_file_perms };
+')
+
+
+# To exec the perfetto cmdline client and pass it the trace config on
+# stdint through a pipe. Allow to access traced's privileged consumer socket.
+userdebug_or_eng(`
+  allow platform_app_all perfetto_exec:file rx_file_perms;
+  unix_socket_connect(platform_app_all, traced_consumer, traced);
+')
+
+allow platform_app_all audioserver_service:service_manager find;
+allow platform_app_all cameraserver_service:service_manager find;
+allow platform_app_all drmserver_service:service_manager find;
+allow platform_app_all mediaserver_service:service_manager find;
+allow platform_app_all mediametrics_service:service_manager find;
+allow platform_app_all mediaextractor_service:service_manager find;
+allow platform_app_all mediadrmserver_service:service_manager find;
+allow platform_app_all persistent_data_block_service:service_manager find;
+allow platform_app_all radio_service:service_manager find;
+allow platform_app_all thermal_service:service_manager find;
+allow platform_app_all app_api_service:service_manager find;
+allow platform_app_all system_api_service:service_manager find;
+allow platform_app_all vr_manager_service:service_manager find;
+allow platform_app_all stats_service:service_manager find;
+allow platform_app_all tradeinmode_service:service_manager find;
+
+# Allow platform apps to log via statsd.
+binder_call(platform_app_all, statsd)
+
+# Allow platform applications to find and call artd for testing
+userdebug_or_eng(`
+  allow platform_app_all artd_service:service_manager find;
+  binder_call(platform_app_all, artd)
+')
+
+# Access to /data/preloads
+allow platform_app_all preloads_data_file:file r_file_perms;
+allow platform_app_all preloads_data_file:dir r_dir_perms;
+allow platform_app_all preloads_media_file:file r_file_perms;
+allow platform_app_all preloads_media_file:dir r_dir_perms;
+
+read_runtime_log_tags(platform_app_all)
+
+# allow platform apps to use UDP sockets provided by the system server but not
+# modify them other than to connect
+allow platform_app_all system_server:udp_socket {
+        connect getattr read recvfrom sendto write getopt setopt };
+
+# allow platform apps to connect to the property service
+set_prop(platform_app_all, test_boot_reason_prop)
+
+# allow platform apps to read keyguard.no_require_sim
+get_prop(platform_app_all, keyguard_config_prop)
+
+# allow platform apps to read qemu.hw.mainkeys
+get_prop(platform_app_all, qemu_hw_prop)
+
+# allow platform apps to read sys.boot.reason.last
+get_prop(platform_app_all, last_boot_reason_prop)
+
+# allow platform apps to create symbolic link
+allow platform_app_all app_data_file:lnk_file create_file_perms;
+
+# suppress denials caused by debugfs_tracing
+dontaudit platform_app_all debugfs_tracing:file rw_file_perms;
+
+# Allow platform apps to create VMs
+virtualizationservice_use(platform_app_all)
+
+# Allow platform apps to access AiSeal VM. Note that access to the
+# service is guarded with the `android.permission.MANAGE_AISEAL_VIRTUAL_MACHINE`
+# permission and AiSeal restricts access to the VM only to its tenants, so
+# even with the permission granted, the app won't be able to access the VM
+# with other tenants.
+is_flag_enabled(RELEASE_AISEAL_FRAMEWORK, `
+    aiseal_use(platform_app_all)
+')
+
+# Allow platform apps to read files and directories under /data/system/shutdown-checkpoints/
+r_dir_file(platform_app_all, shutdown_checkpoints_system_data_file)
+
+###
+### Neverallow rules
+###
+
+# app domains which access /dev/fuse should not run as platform_app_all
+neverallow platform_app_all fuse_device:chr_file *;
+
+# Allow platform_app_all to write the thermal profile property.
+set_prop(platform_app_all, thermal_profile_prop)

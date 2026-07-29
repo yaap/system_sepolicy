@@ -1,0 +1,31 @@
+# HID service
+# executable type
+type hidservice, domain;
+
+type hidservice_exec, system_file_type, exec_type, file_type;
+
+# domain for the daemon
+typeattribute hidservice coredomain;
+
+init_daemon_domain(hidservice)
+
+binder_use(hidservice)
+add_service(hidservice, hid_service)
+
+# Needed to allow binder RPC calls.
+binder_service(hidservice)
+
+# Needed for thread pool optimization in tokio runtime initialization.
+allow hidservice cgroup:file r_file_perms;
+
+# Listen to /dev (for CTS) changes
+allow hidservice device:dir r_dir_perms;
+
+# Read/write /dev/hidraw* device nodes
+allow hidservice hidraw_device:chr_file rw_file_perms;
+
+# stat(2) on uevent file under sysfs device folders
+allow hidservice sysfs:file getattr;
+
+# Read/search /sys/devices/virtual/misc/uhid
+r_dir_file(hidservice, sysfs_uhid)

@@ -1,6 +1,8 @@
-# TODO(b/193504816): move this to compos APEX
 type compos, domain, coredomain, microdroid_payload;
 type compos_exec, exec_type, file_type, system_file_type;
+
+# allow writing kmsg_debug (stdio_to_kmsg) inherited from microdroid_manager.
+allow compos kmsg_debug_device:chr_file w_file_perms;
 
 # Run derive_classpath in our domain
 allow compos derive_classpath_exec:file rx_file_perms;
@@ -16,6 +18,12 @@ set_prop(compos, device_config_runtime_native_boot_prop)
 
 # Allow running odrefresh in its own domain
 domain_auto_trans(compos, odrefresh_exec, odrefresh)
+
+# Allow running dex2oat in its own domain
+domain_auto_trans(compos, dex2oat_exec, dex2oat)
+
+# Allow compos to monitor dex2oat child process in /proc
+r_dir_file(compos, dex2oat)
 
 # Allow running compos_key_helper in its own domain
 domain_auto_trans(compos, compos_key_helper_exec, compos_key_helper)
